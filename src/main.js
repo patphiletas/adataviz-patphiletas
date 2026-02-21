@@ -1,6 +1,7 @@
 import { recupererDonnees } from './event.js';
 import { afficherCards, activerToggleDescription } from "./dom.js";
 import { activerTags } from './event.js';
+import logoParis from '/public/logo.png';
 
 let dataTotal = [];
 let currentIndex = 0;
@@ -59,7 +60,7 @@ function initialiserPage() {
 
   head.innerHTML = `
     <div class="content">
-    <img src="/logo.png" alt="Logo Paris" id="LogoParis"> 
+    <img src="${logoParis}" alt="Logo Paris" id="LogoParis"> 
       <a href="#top" class="headerTitleLink">
         <h1>Que faire à <em>Paris</em> ?</h1>
       </a>
