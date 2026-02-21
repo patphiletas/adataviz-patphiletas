@@ -59,7 +59,7 @@ function initialiserPage() {
 
   head.innerHTML = `
     <div class="content">
-    <img src="public/logo.png" alt="Logo Paris" id="LogoParis"> 
+    <img src="/logo.png" alt="Logo Paris" id="LogoParis"> 
       <a href="#top" class="headerTitleLink">
         <h1>Que faire à <em>Paris</em> ?</h1>
       </a>
