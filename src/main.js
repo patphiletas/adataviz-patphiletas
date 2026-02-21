@@ -1,7 +1,7 @@
 import { recupererDonnees } from './event.js';
 import { afficherCards, activerToggleDescription } from "./dom.js";
 import { activerTags } from './event.js';
-import logoUrl from './logo.png'
+import logoUrl from '.public/logo.png'
 
 let dataTotal = [];
 let currentIndex = 0;
