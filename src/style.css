@@ -15,7 +15,7 @@
   top: 0;
   z-index: 1000;
   border-bottom: 5px solid #ffffff;
-  background-image: url('AdobeStock_907112018_Preview.jpeg');
+  background-image: url('/AdobeStock_907112018_Preview.jpeg');
   background-size: cover; 
   background-position: center; 
   box-shadow: inset 10px 10px 20px rgba(0,0,0,0.3);
