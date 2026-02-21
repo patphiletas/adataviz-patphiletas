@@ -1,0 +1,94 @@
+import { useEffect, useState } from "react";
+
+export default function ThemeSkills({ themeId }) {
+  
+  const [theme, setTheme] = useState(null);
+
+  useEffect(() => {
+    fetch(`http://localhost:3000/themes/${themeId}`)
+      .then(res => res.json())
+      .then(data => setTheme(data[0]));
+  }, [themeId]);
+
+  const updateSkillStatus = async (skillIndex, status) => {
+    const res = await fetch(
+      `http://localhost:3000/themes/${themeId}/skills/${skillIndex}/${status}`,
+      { method: "PUT" }
+    );
+    const updatedSkills = await res.json();
+    setTheme({ ...theme, skills: updatedSkills });
+  };
+
+  const deleteTheme = async () => {
+    await fetch(`http://localhost:3000/themes/${themeId}`, {
+      method: "DELETE",
+    });
+    setTheme(null);
+  };
+<div>
+<input>
+
+
+</input>
+
+
+
+</div>
+
+
+  if (!theme) return <p>Chargement...</p>;
+
+  return (
+    <div>
+      <h2><em>{theme.name}</em></h2>
+
+    <ul>
+      {theme.skills.map((skill, index) => (
+        <div key={index}>
+          <h4>{skill.label}</h4>
+          <select
+            value={skill.validation}
+            onChange={(e) =>
+              updateSkillStatus(index, e.target.value)
+            }
+          >
+            <option value="OK">✅ OK</option>
+            <option value="PROGRESS">📈 PROGRESS</option>
+            <option value="KO">☠️ KO</option>
+          </select>
+          <h3>----------------</h3>
+        </div>
+      ))}
+    </ul>
+<div className="btnDown">
+    <button onClick={deleteTheme}>❌ Supprimer le thème</button>
+    <button onClick={() => popup(AddInCreate)}>🖍️ Ajouter un thème</button>
+    </div>
+  </div>
+);
+function AddInCreate (addTheme){
+<div>
+<input>
+
+
+</input>
+
+
+
+</div>
+
+
+  }
+}
+
+
+
+
+// // post
+// router.post("/", async (req, res) => {
+//   const { name, skills } = req.body;
+//   const skillsValue = JSON.stringify(skills);
+//   const rows = await sql`INSERT INTO themes (name, skills)
+// VALUES (${name}, ${skillsValue}::jsonb)`;
+//   res.send(rows[0]);
+// });

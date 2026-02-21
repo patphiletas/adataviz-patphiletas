@@ -114,7 +114,6 @@ function initialiserPage() {
   const searchInput = document.getElementById("search");
   const clearBtn = document.getElementById("clear-search");
   
-
   searchInput.addEventListener("input", (ev) => {
     const value = ev.target.value;
     rechercherEvenements(value);
@@ -218,20 +217,16 @@ function rechercherEvenements(query = "") {
     return;
   }
   
-
   filteredData.forEach(event => {
     cardsList.innerHTML += afficherCards(event);
   });
   
-  
-
 
   activerTags();
 }
 
 // ------------------
 // Gestion des tags
-
 
 function gererTagClick(tag) {
   if (tag === tagActif) {
@@ -279,10 +274,11 @@ function filtrerParTag(tag) {
 
 window.filtrerParTag = filtrerParTag;
 
-
 window.addEventListener("scroll", () => {
   const btn = document.getElementById("debutBtn");
   if (btn) {
     btn.style.display = window.scrollY > 300 ? "block" : "none";
   }
 });
+
+
