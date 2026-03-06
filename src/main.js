@@ -5,6 +5,7 @@ import { activerTags } from './event.js';
 let dataTotal = [];
 let currentIndex = 0;
 const limit = 3;
+const MIN_VISIBLE_LEVEL_HEIGHT = 260;
 
 let tagActif = null; 
 window.gererTagClick = gererTagClick; 
@@ -47,6 +48,7 @@ async function afficherDonnees() {
   initialiserPage();   
   afficherMorceaux(); 
   activerToggleDescription();
+  requestAnimationFrame(ajusterHeaderSelonHauteur);
 }
 afficherDonnees()
 
@@ -100,6 +102,7 @@ function initialiserPage() {
       </div>
 
       <button id="reset-filters">Réinitialiser</button>
+      <button id="header-toggle" type="button" aria-expanded="true">Réduire l'en-tête</button>
     </div>
   `;
 
@@ -136,6 +139,16 @@ function initialiserPage() {
 
   // Reset filtres
   document.getElementById("reset-filters").addEventListener("click", resetAffichage);
+
+  const headerToggleBtn = document.getElementById("header-toggle");
+  headerToggleBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    document.body.classList.toggle("header-collapsed");
+    updateHeaderToggleState();
+    ajusterHeaderSelonHauteur();
+  });
+
+  updateHeaderToggleState();
 }
 
 // -----------------
@@ -159,6 +172,7 @@ async function resetAffichage() {
   tagActif = null; 
 
   activerTags();
+  requestAnimationFrame(ajusterHeaderSelonHauteur);
 }
 
 // -----------------
@@ -179,6 +193,7 @@ function afficherMorceaux() {
   }
 
   activerTags();
+  requestAnimationFrame(ajusterHeaderSelonHauteur);
 }
 
 // -----------------------
@@ -214,6 +229,7 @@ function rechercherEvenements(query = "") {
     `;
     
     voirPlusBtn.style.display = "none"; 
+    requestAnimationFrame(ajusterHeaderSelonHauteur);
     return;
   }
   
@@ -223,6 +239,7 @@ function rechercherEvenements(query = "") {
   
 
   activerTags();
+  requestAnimationFrame(ajusterHeaderSelonHauteur);
 }
 
 // ------------------
@@ -270,6 +287,42 @@ function filtrerParTag(tag) {
   });
 
   activerTags();
+  requestAnimationFrame(ajusterHeaderSelonHauteur);
+}
+
+function getVisibleLevelHeight() {
+  const firstCard = document.querySelector("#cards-list .card");
+  if (!firstCard) return MIN_VISIBLE_LEVEL_HEIGHT;
+  return Math.max(MIN_VISIBLE_LEVEL_HEIGHT, firstCard.getBoundingClientRect().height * 0.75);
+}
+
+function updateHeaderToggleState() {
+  const btn = document.getElementById("header-toggle");
+  if (!btn) return;
+
+  const collapsed = document.body.classList.contains("header-collapsed");
+  btn.textContent = collapsed ? "Afficher l'en-tête" : "Réduire l'en-tête";
+  btn.setAttribute("aria-expanded", String(!collapsed));
+}
+
+function ajusterHeaderSelonHauteur() {
+  const head = document.getElementById("head");
+  const cardsList = document.getElementById("cards-list");
+  const btn = document.getElementById("header-toggle");
+  if (!head || !cardsList || !btn) return;
+
+  const visibleLevelHeight = getVisibleLevelHeight();
+  const headHeight = head.getBoundingClientRect().height;
+  const remainingHeight = window.innerHeight - headHeight;
+
+  const heightIsTight = remainingHeight < visibleLevelHeight;
+  document.body.classList.toggle("force-compact-header", heightIsTight);
+
+  if (heightIsTight && !document.body.classList.contains("header-collapsed")) {
+    document.body.classList.add("header-collapsed");
+  }
+
+  updateHeaderToggleState();
 }
 
 window.filtrerParTag = filtrerParTag;
@@ -281,4 +334,10 @@ window.addEventListener("scroll", () => {
   }
 });
 
+window.addEventListener("resize", ajusterHeaderSelonHauteur);
 
+document.addEventListener("click", (event) => {
+  if (event.target.classList?.contains("toggleDescription")) {
+    requestAnimationFrame(ajusterHeaderSelonHauteur);
+  }
+});

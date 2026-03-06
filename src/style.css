@@ -25,6 +25,7 @@
   display: flex;      
   justify-content: center; 
   align-items: center;   
+  transition: padding 0.2s ease, min-height 0.2s ease, border-bottom-width 0.2s ease;
 }
 
 #head .content {
@@ -46,6 +47,7 @@
   text-shadow: 
     2px 2px 4px rgba(0, 0, 0, 0.7), 
     -1px -1px 0px rgba(255, 255, 255, 0.3); 
+  transition: font-size 0.2s ease;
 }
 
 
@@ -58,6 +60,50 @@
   outline: none;
   margin-top: 15px;
   box-sizing: border-box;  
+}
+
+#header-toggle {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+#header-toggle:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+body.header-collapsed #head {
+  min-height: 56px;
+  padding: 10px 16px;
+  border-bottom-width: 2px;
+}
+
+body.header-collapsed #head h1 {
+  font-size: clamp(1.3rem, 3.2vw, 1.8rem);
+  margin: 0;
+}
+
+body.header-collapsed #head #LogoParis {
+  display: none;
+}
+
+body.header-collapsed #head #search {
+  margin-top: 8px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+body.header-collapsed #head #reset-filters {
+  margin-top: 8px;
+}
+
+body.force-compact-header #header-toggle {
+  opacity: 0.85;
 }
 
 body {
@@ -358,4 +404,3 @@ button#debutBtn:hover {
   height: 22px;
   margin-top: 10px;
 }
-
