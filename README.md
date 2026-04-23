@@ -1,6 +1,6 @@
 <div align="center">
 
-# Paris Events Explorer
+# Que faire à Paris ?
 
 **Explorer les événements à Paris en temps réel à partir de l'Open Data de la Ville de Paris.**
 
@@ -18,7 +18,7 @@
 
 ## Aperçu
 
-Paris Events Explorer est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher des événements à venir sous forme de cartes. Le projet permet de rechercher, filtrer et parcourir les événements de manière fluide, avec une interface responsive et un en-tête dynamique.
+Que faire à Paris ? est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher des événements à venir sous forme de cartes. Le projet permet de rechercher, filtrer et parcourir les événements de manière fluide, avec une interface responsive et un en-tête dynamique.
 
 ---
 
