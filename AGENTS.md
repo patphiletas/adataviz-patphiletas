@@ -11,16 +11,16 @@ Application front-end en **JavaScript vanilla + Vite** qui affiche les événeme
 ## Structure
 
 ```
-index.html          # Page unique ; le header et la liste sont générés par src/main.js
+index.html          # Page unique : en-tête, recherche, conteneurs (filtres, liste), pied de page
 src/
   api.js            # Requêtes ODSQL (construireFiltre, construireUrl), periode(), codesPostaux(), chargerEvenements
   filtres.js        # Filtres ↔ URL (lireFiltres, ecrireFiltres), libellés, resumeFiltres
-  main.js           # État de la liste, recherche (debounce), tags, pagination, états, header
+  main.js           # Imports polices/CSS, état de la liste, recherche (debounce), filtres, tags, pagination, états
   dom.js            # Rendu d'une carte, libelleDate, messageEtat, échappement/sanitisation HTML
   event.js          # Délégation des clics sur les tags
   style.css
 tests/              # Vitest (api.test.js en Node, dom.test.js en jsdom)
-public/             # logo, image d'en-tête
+public/             # (vide) — pas de logo de la Ville ni d'image de banque d'images
 docs/               # sujet du projet (PDF), base de données de départ, carte mentale
 que-faire-a-paris-.json   # échantillon du jeu de données (référence, non chargé par l'app)
 ```
@@ -48,10 +48,20 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Les périodes (« aujourd'hui », « ce week-end », « 7 prochains jours ») sont calculées **à l'heure de Paris** dans `periode()`, quel que soit le fuseau du navigateur ; un événement est retenu s'il chevauche la période.
 - Erreur réseau/HTTP → `chargerEvenements` lève une erreur → message `messageEtat("erreur", …, { reessayer: true })`.
 
+## Design (direction éditoriale, choisie le 2026-11-14)
+
+- Variables de couleur dans `:root` de `src/style.css` : `--papier`, `--encre`, `--rouge` (Gratuit, accents), `--bleu` (Payant), `--gris`, `--filet`. Ne pas introduire de couleur en dur ; vérifier tout nouveau contraste de texte (≥ 4,5:1).
+- Polices auto-hébergées via `@fontsource-variable/fraunces` (titres) et `@fontsource-variable/inter` (texte), importées en tête de `main.js`. Pas de Google Fonts (vie privée).
+- Une carte = `<article class="card">` : colonne de date (`colonneDate()`), image 3:2, titre serif graisse 500 coupé à 3 lignes (`line-clamp`, titre complet en `title`), lieu · arrondissement, libellé de date, badges (prix + tags en `<button>`), bouton « Infos pratiques ».
+- « Infos pratiques » ouvre l'encart `<dialog id="fiche">` (index.html) rempli par `afficherFiche()` depuis `evenementsAffiches` (Map par `id`, dans `main.js`). Ne pas revenir à un dépliage dans la carte : il décalait toute la rangée suivante.
+- Peu de filets : pas de filet sous les cartes (séparées par l'espace, `gap` de la grille).
+- Pas de logo « Mairie de Paris » ni d'image de banque d'images (l'ancienne était une « Preview » AdobeStock filigranée, non licenciée) : l'app est indépendante, la source est citée en pied de page.
+- Mobile (< 600 px) : la barre de filtres défile horizontalement ; vérifier qu'aucun élément ne fait déborder la page (`document.documentElement.scrollWidth` = largeur d'écran).
+
 ## Conventions
 
 - **Tags** : un seul écouteur délégué sur `document` (`activerTags()` dans `event.js`, idempotent). Ne pas réattacher d'écouteurs à chaque rendu : les anciens s'empilaient et un clic déclenchait plusieurs filtrages.
-- **Rendu des cartes** : `liste.map(afficherCards).join("")` puis `innerHTML =` (remplacement) ou `insertAdjacentHTML("beforeend", …)` (ajout « Voir plus »).
+- **Rendu des cartes** : `liste.map((e) => afficherCards(e)).join("")` (ne pas passer `afficherCards` directement à `map`, son 2ᵉ paramètre est la date « maintenant ») puis `innerHTML =` (remplacement) ou `insertAdjacentHTML("beforeend", …)` (ajout « Voir plus »).
 - Les fonctions appelées depuis le HTML ou d'autres modules sont exposées sur `window` (`gererTagClick`, `filtrerParTag`).
 - Code et commentaires en français.
 
@@ -71,8 +81,8 @@ npx vitest run    # une exécution
 
 Ajouter un test pour toute modification de `api.js` (filtre, URL, erreurs) ou de `dom.js` (échappement, dates, cartes). Les tests ne doivent pas appeler le réseau : passer `fetchFn` à `chargerEvenements`.
 
-Vérifier aussi à la main dans le navigateur : compteur au chargement, chaque filtre (quand, gratuit, arrondissement) et l'URL qui suit, un lien avec filtres ouvert dans un nouvel onglet, recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Réinitialiser », « Voir plus / Voir moins » sur une carte, et le message d'erreur (couper le réseau dans les DevTools).
+Vérifier aussi à la main dans le navigateur : compteur au chargement, chaque filtre (quand, gratuit, arrondissement) et l'URL qui suit, un lien avec filtres ouvert dans un nouvel onglet, recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Tout effacer », l'encart « Infos pratiques » (ouverture, ✕, Échap, clic à côté), l'affichage mobile, et le message d'erreur (couper le réseau dans les DevTools).
 
 ## Pistes d'évolution notées
 
-Refonte visuelle, vue carte (`lat_lon`), accessibilité, Lighthouse, favicon/OG.
+Vue carte (`lat_lon`), audit Lighthouse, favicon et image de partage (OG), animation de 5 s pour le portfolio.

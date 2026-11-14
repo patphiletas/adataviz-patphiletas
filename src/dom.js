@@ -91,89 +91,115 @@ export function sanitizeHtml(html) {
 // -----------------
 // Affichage des cartes
 
-export function afficherCards(data) {
-  const tags = data.qfap_tags
-    ? data.qfap_tags.split(";").map(tag => tag.trim())
-    : [];
-  const dateLisible = libelleDate(data);
+// Colonne de date façon agenda : jour de la semaine, numéro, mois.
+// Pour un événement commencé un jour précédent et pas terminé, on affiche la
+// date de fin (« jusqu'au »). Un événement qui a commencé aujourd'hui garde sa date.
+const FORMAT_COURT = { timeZone: "Europe/Paris" };
 
+export function colonneDate(evenement, maintenant = new Date()) {
+  const { date_start: debut, date_end: fin } = evenement ?? {};
+  if (!debut) return null;
+  const commenceAvantAujourdhui = formatDate(debut) !== formatDate(maintenant) && new Date(debut) < maintenant;
+  const enCours = fin && commenceAvantAujourdhui && new Date(fin) >= maintenant;
+  const date = new Date(enCours ? fin : debut);
+  const morceau = (options) => date.toLocaleDateString("fr-FR", { ...FORMAT_COURT, ...options });
+  return {
+    haut: enCours ? "jusqu'au" : morceau({ weekday: "short" }).replace(".", ""),
+    jour: morceau({ day: "numeric" }),
+    bas: morceau({ month: "short" }).replace(".", ""),
+  };
+}
+
+function prix(data) {
+  const type = (data.price_type ?? "").toLowerCase();
+  if (type.startsWith("gratuit")) return { texte: type === "gratuit" ? "Gratuit" : "Gratuit sous condition", gratuit: true };
+  if (type === "payant") return { texte: "Payant", gratuit: false };
+  return null;
+}
+
+function arrondissement(codePostal) {
+  const m = /^75(?:0(\d\d)|116)$/.exec(codePostal ?? "");
+  if (!m) return "";
+  const n = m[1] ? Number(m[1]) : 16;
+  if (n < 1 || n > 20) return "";
+  return n === 1 ? "1er" : `${n}e`;
+}
+
+function badgePrix(data) {
+  const tarif = prix(data);
+  if (!tarif) return "";
+  const classe = tarif.gratuit ? "badge-gratuit" : "badge-payant";
+  return `<span class="badge ${classe}">${escapeHtml(tarif.texte)}</span>`;
+}
+
+function lieuEtArrondissement(data) {
+  return [data.address_name, arrondissement(data.address_zipcode)].filter(Boolean).map(escapeHtml).join(" · ");
+}
+
+// -----------------
+// Affichage d'une carte (les détails s'ouvrent dans un encart : afficherFiche)
+
+export function afficherCards(data, maintenant = new Date()) {
   const e = escapeHtml;
+  const tags = data.qfap_tags ? data.qfap_tags.split(";").map((tag) => tag.trim()).filter(Boolean) : [];
   const cover = safeUrl(data.cover_url);
+  const col = colonneDate(data, maintenant);
+  const lieu = lieuEtArrondissement(data);
 
   return `
-    <div class="card">
-      <button class="audienceBtn">${e(data.audience)}</button>
-      <div class="tags">
-        ${tags.map(tag => `<span class="tag" data-tag="${e(tag)}">${e(tag)}</span>`).join(" ")}
+    <article class="card">
+      <div class="date-col" aria-hidden="true">
+        ${col ? `<span>${e(col.haut)}</span><b>${e(col.jour)}</b><span>${e(col.bas)}</span>` : ""}
       </div>
-      <h2>${e(data.title)}</h2>
-      <h3>${e(data.address_name)}</h3>
-      ${cover ? `<img src="${e(cover)}" alt="${e(data.title)}" width="300" loading="lazy">` : ""}
-      <p class="date">${e(dateLisible)}</p>
-
-      <div class="descriptionHidden hidden">
-        <p><strong>Prix :</strong> ${e(data.price_type ?? "Non communiqué")} ${e(data.price_detail)}</p>
-        <p>
-          <strong>Adresse :</strong>
-          ${e(data.address_street)}
-          ${e(data.address_zipcode)}
-          ${e(data.address_city ?? "Non communiquée")}
-        </p>
-        <p><strong>Description :</strong> ${e(data.lead_text ?? "Non communiqué")}</p>
-        <div class="description">${sanitizeHtml(data.description)}</div>
-        <p><strong>Mail :</strong> ${e(data.contact_mail ?? "Non communiqué")}</p>
+      <div class="card-corps">
+        ${cover ? `<img class="card-image" src="${e(cover)}" alt="" loading="lazy" decoding="async">` : ""}
+        <h2 title="${e(data.title)}">${e(data.title)}</h2>
+        <p class="meta">${lieu ? `<strong>${lieu}</strong><br>` : ""}<span class="date">${e(libelleDate(data, maintenant))}</span></p>
+        <div class="badges">
+          ${badgePrix(data)}
+          ${tags.map((tag) => `<button type="button" class="badge tag" data-tag="${e(tag)}" aria-pressed="false">${e(tag)}</button>`).join("")}
+        </div>
+        <button type="button" class="ouvrir-fiche" data-id="${e(data.id)}" aria-haspopup="dialog">Infos pratiques</button>
       </div>
-      <button class="toggleDescription">Voir plus</button>
-    </div>
+    </article>
   `;
 }
+
+// -----------------
+// Contenu de l'encart « Infos pratiques » (élément <dialog> de index.html)
+
+export function afficherFiche(data, maintenant = new Date()) {
+  const e = escapeHtml;
+  const lieu = lieuEtArrondissement(data);
+  const lien = safeUrl(data.url);
+  const adresse = [data.address_street, data.address_zipcode, data.address_city].filter(Boolean).map(e).join(" ");
+
+  return `
+    <h2 id="fiche-titre">${e(data.title)}</h2>
+    <p class="meta">${lieu ? `<strong>${lieu}</strong> · ` : ""}${e(libelleDate(data, maintenant))}</p>
+    <div class="badges">${badgePrix(data)}</div>
+    ${data.lead_text ? `<p class="accroche">${e(data.lead_text)}</p>` : ""}
+    <dl>
+      ${data.audience ? `<dt>Public</dt><dd>${e(data.audience)}</dd>` : ""}
+      ${data.price_detail ? `<dt>Tarifs</dt><dd>${sanitizeHtml(data.price_detail)}</dd>` : ""}
+      ${adresse ? `<dt>Adresse</dt><dd>${adresse}</dd>` : ""}
+    </dl>
+    <div class="description">${sanitizeHtml(data.description)}</div>
+    ${lien ? `<p class="fiche-lien"><a href="${e(lien)}" target="_blank" rel="noopener noreferrer">Voir la fiche complète sur paris.fr ↗</a></p>` : ""}
+  `;
+}
+
 // --------------------
 // Messages d'état (chargement, erreur, aucun résultat) affichés à la place des cartes
 
-export function messageEtat(type, texte, { reessayer = false } = {}) {
+export function messageEtat(type, texte, { reessayer = false, reinitialiser = false } = {}) {
   const role = type === "erreur" ? "alert" : "status";
   return `
     <div class="etat etat-${escapeHtml(type)}" role="${role}">
       ${type === "chargement" ? '<span class="spinner" aria-hidden="true"></span>' : ""}
       <p>${escapeHtml(texte)}</p>
       ${reessayer ? '<button type="button" id="reessayer">Réessayer</button>' : ""}
+      ${reinitialiser ? '<button type="button" id="etat-reinitialiser">Tout effacer</button>' : ""}
     </div>
   `;
 }
-
-// --------------------
-
-
-let toggleListenerInitialized = false;
-
-export function activerToggleDescription() {
-  if (toggleListenerInitialized) return; // Évite les doublons
-  
-  toggleListenerInitialized = true;
-  
-  document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("toggleDescription")) {
-      const card = e.target.closest(".card");
-      const desc = card.querySelector(".descriptionHidden");
-
-      desc.classList.toggle("hidden");
-
-      e.target.textContent = desc.classList.contains("hidden")
-        ? "Voir plus"
-        : "Voir moins";
-    }
-  });
-}
-
-// ----------------
-// Clear search
-
-document.addEventListener("click", (e) => {
-  if (e.target.id === "clear-search") {
-    const input = document.getElementById("search");
-    if (input) {
-      input.value = "";
-      input.dispatchEvent(new Event("input")); 
-    }
-  }
-});

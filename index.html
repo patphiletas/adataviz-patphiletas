@@ -5,33 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Que faire à Paris ? — sorties en cours et à venir</title>
   <meta name="description" content="Concerts, expos, ateliers : tous les événements en cours et à venir à Paris, d'après les données ouvertes de la Ville.">
-  <link rel="stylesheet" href="src/style.css">
+  <meta name="theme-color" content="#f6f1e7">
 </head>
 
 <body>
-  <div class="pageEntiere">
+  <a class="evitement" href="#liste">Aller aux événements</a>
 
-    <header id="head" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">
-  <div class="content">
-    <a href="#top" class="headerTitleLink">
-      <h1>Événements à Paris</h1>
-    </a>
-    <label for="search" class="sr-only">Recherche d'événements</label>
-    <input type="text" id="search" placeholder="Rechercher un événement...">
+  <header class="entete">
+    <p class="surtitre">Le guide des sorties · données ouvertes de la Ville de Paris</p>
+    <h1>Que faire à <em>Paris</em>&nbsp;?</h1>
+    <p class="chapo">Concerts, expositions, ateliers : tous les rendez-vous en cours ou à venir, mis à jour chaque jour.</p>
+
+    <form class="recherche" role="search" id="form-recherche">
+      <label for="search" class="sr-only">Rechercher un événement</label>
+      <input type="search" id="search" placeholder="Un concert, un musée, un quartier…" autocomplete="off">
+      <button type="button" id="clear-search" class="effacer" aria-label="Effacer la recherche" hidden>✕</button>
+      <button type="submit" class="chercher">Chercher</button>
+    </form>
+  </header>
+
+  <div class="barre-filtres">
+    <div id="filtres" class="filtres" role="group" aria-label="Filtres"></div>
   </div>
-</header>
 
-    <div id="app"></div>
+  <main id="liste" tabindex="-1">
+    <p id="compteur" class="compteur" aria-live="polite"></p>
+    <div id="cards-list" class="cartes" aria-live="polite"></div>
+    <button type="button" id="voirPlus" class="voir-plus" hidden>Voir plus d'événements</button>
+  </main>
 
-    <div id="events-container">
-      <div id="cards-list"></div>
-    </div>
+  <footer class="pied">
+    <p>
+      Données : <a href="https://opendata.paris.fr/explore/dataset/que-faire-a-paris-/" target="_blank" rel="noopener noreferrer">« Que faire à Paris ? », Open Data Paris</a> (licence ODbL).
+      Projet indépendant de <a href="https://portfoliopatphiletas.vercel.app/" target="_blank" rel="noopener noreferrer">Patrice Philétas</a> ·
+      <a href="https://github.com/patphiletas/adataviz-patphiletas" target="_blank" rel="noopener noreferrer">code source</a>.
+    </p>
+  </footer>
 
-    <ul id="events-list"></ul>
+  <dialog id="fiche" class="fiche" aria-labelledby="fiche-titre">
+    <button type="button" class="fermer" id="fiche-fermer" aria-label="Fermer les infos pratiques">✕</button>
+    <div id="fiche-contenu"></div>
+  </dialog>
 
-  </div>
+  <button type="button" id="debutBtn" class="haut" aria-label="Revenir en haut de la page" hidden>↑</button>
 
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
-

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, messageEtat } from "../src/dom.js";
+import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate } from "../src/dom.js";
 
 const MAINTENANT = new Date("2026-11-14T12:00:00+01:00");
 
@@ -83,6 +83,113 @@ describe("afficherCards", () => {
   });
 });
 
+describe("colonneDate", () => {
+  it("événement à venir : jour de la semaine, numéro et mois du début", () => {
+    expect(colonneDate({ date_start: "2026-11-20T20:00:00+01:00", date_end: "2026-11-20T22:00:00+01:00" }, MAINTENANT)).toEqual({
+      haut: "ven",
+      jour: "20",
+      bas: "nov",
+    });
+  });
+  it("événement en cours : « jusqu'au » et la date de fin", () => {
+    expect(colonneDate({ date_start: "2026-09-01T10:00:00+02:00", date_end: "2027-01-10T18:00:00+01:00" }, MAINTENANT)).toEqual({
+      haut: "jusqu'au",
+      jour: "10",
+      bas: "janv",
+    });
+  });
+  it("événement commencé aujourd'hui : garde la date du jour", () => {
+    expect(colonneDate({ date_start: "2026-11-14T10:00:00+01:00", date_end: "2026-11-14T18:00:00+01:00" }, MAINTENANT)).toEqual({
+      haut: "sam",
+      jour: "14",
+      bas: "nov",
+    });
+  });
+  it("renvoie null sans date", () => {
+    expect(colonneDate({}, MAINTENANT)).toBeNull();
+  });
+});
+
+describe("afficherCards (mise en page éditoriale)", () => {
+  const evenement = {
+    id: "125022",
+    title: "Concert",
+    address_name: "Le Lieu",
+    address_zipcode: "75011",
+    price_type: "gratuit sous condition",
+    price_detail: '<p class="text">Sur réservation</p><script>alert(1)</script>',
+    date_start: "2026-11-20T20:00:00+01:00",
+    date_end: "2026-11-20T22:00:00+01:00",
+    url: "javascript:alert(1)",
+    qfap_tags: "Concert;Jazz",
+  };
+  const html = afficherCards(evenement, MAINTENANT);
+
+  it("affiche l'arrondissement à partir du code postal", () => {
+    expect(html).toContain("Le Lieu · 11e");
+    expect(afficherCards({ ...evenement, address_zipcode: "75116" }, MAINTENANT)).toContain("Le Lieu · 16e");
+    expect(afficherCards({ ...evenement, address_zipcode: "92100" }, MAINTENANT)).not.toContain(" · 92");
+  });
+
+  it("signale la gratuité en rouge et le payant en bleu", () => {
+    expect(html).toContain('class="badge badge-gratuit">Gratuit sous condition');
+    expect(afficherCards({ ...evenement, price_type: "payant" }, MAINTENANT)).toContain('class="badge badge-payant">Payant');
+    expect(afficherCards({ ...evenement, price_type: null }, MAINTENANT)).not.toContain("badge-payant");
+  });
+
+  it("garde le titre complet en infobulle (le titre affiché est coupé à 3 lignes)", () => {
+    expect(afficherCards({ ...evenement, title: 'Long "titre"' }, MAINTENANT)).toContain('title="Long &quot;titre&quot;"');
+  });
+
+  it("rend les tags cliquables au clavier (boutons)", () => {
+    expect(html).toContain('<button type="button" class="badge tag" data-tag="Jazz" aria-pressed="false">Jazz</button>');
+  });
+
+  it("ouvre les infos pratiques dans un encart (bouton avec l'identifiant)", () => {
+    expect(html).toContain('class="ouvrir-fiche" data-id="125022" aria-haspopup="dialog"');
+    expect(html).not.toContain("<details");
+  });
+});
+
+describe("afficherFiche (encart Infos pratiques)", () => {
+  const evenement = {
+    title: "Concert <b>",
+    address_name: "Le Lieu",
+    address_zipcode: "75011",
+    address_street: "1 rue X",
+    address_city: "Paris",
+    audience: "Tout public.",
+    price_type: "payant",
+    price_detail: '<p class="text">De 10 à 32 euros.</p><script>alert(1)</script>',
+    lead_text: "Une soirée.",
+    description: '<p>Texte <img src=x onerror=alert(1)></p>',
+    date_start: "2026-11-20T20:00:00+01:00",
+    date_end: "2026-11-20T22:00:00+01:00",
+    url: "https://www.paris.fr/evenements/x-1",
+  };
+  const html = afficherFiche(evenement, MAINTENANT);
+
+  it("affiche le titre complet, échappé, comme titre de l'encart", () => {
+    expect(html).toContain('<h2 id="fiche-titre">Concert &lt;b&gt;</h2>');
+  });
+
+  it("filtre le HTML des tarifs et de la description", () => {
+    expect(html).toContain("<dd><p>De 10 à 32 euros.</p></dd>");
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("onerror");
+  });
+
+  it("donne les infos pratiques et le lien paris.fr", () => {
+    expect(html).toContain("<dt>Public</dt><dd>Tout public.</dd>");
+    expect(html).toContain("<dt>Adresse</dt><dd>1 rue X 75011 Paris</dd>");
+    expect(html).toContain('href="https://www.paris.fr/evenements/x-1"');
+  });
+
+  it("refuse un lien javascript:", () => {
+    expect(afficherFiche({ ...evenement, url: "javascript:alert(1)" }, MAINTENANT)).not.toContain("javascript:");
+  });
+});
+
 describe("messageEtat", () => {
   it("annonce une erreur avec role=alert et un bouton Réessayer", () => {
     const html = messageEtat("erreur", "Oups", { reessayer: true });
@@ -91,6 +198,9 @@ describe("messageEtat", () => {
   });
   it("échappe le texte (la recherche de l'utilisateur y apparaît)", () => {
     expect(messageEtat("vide", "« <img src=x> »")).toContain("&lt;img src=x&gt;");
+  });
+  it("propose de tout effacer quand il n'y a aucun résultat", () => {
+    expect(messageEtat("vide", "Rien", { reinitialiser: true })).toContain('id="etat-reinitialiser"');
   });
   it("affiche un indicateur pendant le chargement", () => {
     expect(messageEtat("chargement", "Chargement…")).toContain('class="spinner"');

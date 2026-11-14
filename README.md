@@ -37,10 +37,27 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 | ⏳ En cours ou à venir | Les événements terminés sont exclus ; les expositions déjà commencées restent visibles (« En cours, jusqu'au … », « Dernier jour : aujourd'hui ») |
 | ➕ Pagination | `Voir plus d'événements` charge les 9 suivants depuis l'API |
 | ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
-| 📄 Détails dépliables | Informations complémentaires avec `Voir plus` / `Voir moins` |
+| 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
+| 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
 | 📍 Infos utiles | Date, prix, adresse, description et contact selon les données disponibles |
-| 📌 En-tête sticky | Header réductible pour garder plus de place aux cartes |
+| 📌 Filtres toujours visibles | La barre de filtres reste en haut de l'écran pendant le défilement ; sur mobile elle défile horizontalement |
 | 📱 Responsive | Affichage adapté mobile, tablette et desktop |
+
+---
+
+## Design
+
+Direction **éditoriale**, façon agenda de magazine culturel : papier crème, encre, rouge d'accent, colonne de date (jour de la semaine, numéro, mois) à gauche de chaque événement. Peu de filets : un filet fin sous l'en-tête, un filet clair au-dessus du pied ; les cartes sont séparées par l'espace. Titres en graisse moyenne, coupés à 3 lignes (titre complet dans l'encart et en infobulle).
+
+| Élément | Choix |
+|---|---|
+| Titrage | Fraunces (variable, romain + italique) |
+| Texte | Inter (variable) |
+| Polices | Hébergées avec l'app via `@fontsource-variable` (aucun appel à Google Fonts) |
+| Couleurs | Variables CSS dans `src/style.css` (`--papier`, `--encre`, `--rouge`, `--bleu`, `--gris`, `--filet`) ; contrastes du texte ≥ 4,5:1 |
+| Accessibilité | Lien d'évitement, focus visibles, tags et filtres en `<button>` avec `aria-pressed`, encart `<dialog>` modal (focus piégé puis rendu au bouton), compteur annoncé (`aria-live`) |
+
+L'app est indépendante : pas de logo de la Ville ni d'image de banque d'images ; la source des données est citée en pied de page (Open Data Paris, licence ODbL).
 
 ---
 
@@ -48,7 +65,8 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 
 | Couche | Technologie |
 |---|---|
-| Frontend | HTML, CSS, JavaScript modulaire |
+| Frontend | HTML, CSS, JavaScript modulaire (sans framework) |
+| Polices | Fraunces + Inter (`@fontsource-variable`) |
 | Build tool | Vite |
 | Données | API Open Data Paris (requêtes ODSQL) |
 | Tests | Vitest + jsdom |
@@ -72,7 +90,7 @@ adataviz-patphiletas/
 └── tests/
     ├── api.test.js  # Filtres, périodes (week-end, heure d'été…), échappement ODSQL, erreurs HTTP
     ├── filtres.test.js # Lecture/écriture des filtres dans l'URL, résumé du compteur
-    └── dom.test.js  # Échappement/sanitisation, libellés de date, cartes, messages d'état
+    └── dom.test.js  # Échappement/sanitisation, libellés et colonne de date, cartes, encart, messages d'état
 ```
 
 ---
@@ -119,7 +137,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (57 tests)
+npx vitest run    # une seule exécution (71 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.
@@ -142,7 +160,7 @@ npm run preview
 - [x] Tests automatisés (Vitest)
 - [x] Filtres « aujourd'hui / ce week-end / 7 prochains jours », « gratuit », arrondissement
 - [x] Recherche et filtres dans l'URL (lien partageable)
-- [ ] Refonte visuelle
+- [x] Refonte visuelle (direction éditoriale)
 - [ ] Mieux gérer les images ou champs manquants
 - [ ] Ajouter une carte géographique des événements
 - [ ] Permettre le tri par thématique ou par arrondissement
