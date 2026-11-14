@@ -4,7 +4,7 @@ Instructions pour tout agent IA (Claude Code ou autre) qui travaille sur ce proj
 
 ## Le projet en une phrase
 
-Application front-end en **JavaScript vanilla + Vite** qui affiche les événements à venir à Paris à partir de l'API Open Data de la Ville (`que-faire-a-paris-`), avec recherche instantanée, filtre par tag et chargement progressif. Déployée sur Vercel : https://adataviz-patphiletas.vercel.app
+Application front-end en **JavaScript vanilla + Vite** qui affiche les événements en cours ou à venir à Paris à partir de l'API Open Data de la Ville (`que-faire-a-paris-`), avec recherche, filtre par tag et chargement progressif — **tous faits par l'API**. Déployée sur Vercel : https://adataviz-patphiletas.vercel.app
 
 **Sans framework, volontairement** : besoin simple, app légère. Ne pas introduire React/Vue/etc. sans le demander à Patrice.
 
@@ -13,10 +13,12 @@ Application front-end en **JavaScript vanilla + Vite** qui affiche les événeme
 ```
 index.html          # Page unique ; le header et la liste sont générés par src/main.js
 src/
-  main.js           # Chargement des données, tri/filtre, recherche, tags, pagination, header
-  dom.js            # Rendu d'une carte (afficherCards) + échappement/sanitisation HTML
-  event.js          # Appel API (recupererDonnees) + délégation des clics sur les tags
+  api.js            # Requêtes ODSQL (construireFiltre, construireUrl) + chargerEvenements
+  main.js           # État de la liste, recherche (debounce), tags, pagination, états, header
+  dom.js            # Rendu d'une carte, libelleDate, messageEtat, échappement/sanitisation HTML
+  event.js          # Délégation des clics sur les tags
   style.css
+tests/              # Vitest (api.test.js en Node, dom.test.js en jsdom)
 public/             # logo, image d'en-tête
 docs/               # sujet du projet (PDF), base de données de départ, carte mentale
 que-faire-a-paris-.json   # échantillon du jeu de données (référence, non chargé par l'app)
@@ -35,6 +37,14 @@ Les données viennent d'une API externe et de la saisie utilisateur : **tout tex
 
 Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${query} »` dans le message « aucun résultat ») et la description de l'API était insérée telle quelle. Corrigé dans le commit « Sécurité : échappement… ».
 
+## Données : règles à respecter
+
+- **Ne jamais filtrer ni trier côté navigateur** une page de résultats : l'API contient plus de 3 000 événements. Tout passe par `construireFiltre()` / `construireUrl()` dans `src/api.js` (bug corrigé le 2026-11-14 : l'app ne chargeait que 100 événements et masquait les expositions déjà commencées).
+- Critère « à venir » = `date_end >= now()` (pas `date_start`), tri `order_by=date_end`.
+- Toute valeur insérée dans une requête ODSQL passe par `echapperOdsql()`.
+- Chaque chargement annule le précédent (`AbortController` dans `charger()` de `main.js`) ; la recherche attend 300 ms après la frappe.
+- Erreur réseau/HTTP → `chargerEvenements` lève une erreur → message `messageEtat("erreur", …, { reessayer: true })`.
+
 ## Conventions
 
 - **Tags** : un seul écouteur délégué sur `document` (`activerTags()` dans `event.js`, idempotent). Ne pas réattacher d'écouteurs à chaque rendu : les anciens s'empilaient et un clic déclenchait plusieurs filtrages.
@@ -51,8 +61,15 @@ npm run build     # build de production dans dist/
 npm run preview   # sert dist/ en local
 ```
 
-Pas de tests automatisés pour l'instant. Vérifier à la main dans le navigateur : recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Voir plus / Voir moins » sur une carte.
+```bash
+npm test          # Vitest (watch)
+npx vitest run    # une exécution
+```
+
+Ajouter un test pour toute modification de `api.js` (filtre, URL, erreurs) ou de `dom.js` (échappement, dates, cartes). Les tests ne doivent pas appeler le réseau : passer `fetchFn` à `chargerEvenements`.
+
+Vérifier aussi à la main dans le navigateur : compteur au chargement, recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Réinitialiser », « Voir plus / Voir moins » sur une carte, et le message d'erreur (couper le réseau dans les DevTools).
 
 ## Pistes d'évolution notées
 
-Refonte visuelle, filtres « aujourd'hui / ce week-end / gratuit », filtre par arrondissement ou vue carte (lat/lon présents dans les données), états de chargement/erreur, recherche dans l'URL, tests.
+Refonte visuelle, filtres « aujourd'hui / ce week-end / gratuit » (`price_type`), filtre par arrondissement (`address_zipcode`) ou vue carte (`lat_lon`), recherche dans l'URL.

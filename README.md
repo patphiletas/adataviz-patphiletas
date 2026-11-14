@@ -18,7 +18,7 @@
 
 ## Aperçu
 
-Que faire à Paris ? est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher des événements à venir sous forme de cartes. Le projet permet de rechercher, filtrer et parcourir les événements de manière fluide, avec une interface responsive et un en-tête dynamique.
+Que faire à Paris ? est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher **tous les événements en cours ou à venir** (plus de 3 000) sous forme de cartes. La recherche, le filtre par tag et la pagination sont faits par l'API : rien n'est limité à un échantillon chargé dans le navigateur.
 
 ---
 
@@ -26,11 +26,13 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 
 | Fonctionnalité | Description |
 |---|---|
-| 🔎 Recherche | Filtrage en direct par titre, description, tags et audience |
-| 🏷️ Tags interactifs | Clic sur un tag pour n'afficher que les événements associés |
-| 📅 Tri chronologique | Les événements sont triés par date croissante |
-| ⏳ Événements à venir | Les événements passés sont exclus de l'affichage |
-| ➕ Pagination légère | Chargement progressif avec le bouton `Voir plus d'événements` |
+| 🔎 Recherche | Recherche plein texte côté API (titre, description, lieu, tags…) sur tous les événements, déclenchée 300 ms après la frappe |
+| 🏷️ Tags interactifs | Clic sur un tag pour filtrer (combinable avec la recherche), re-clic pour l'enlever |
+| 🔢 Compteur | Nombre d'événements correspondant à la recherche et au tag |
+| 📅 Ce qui se passe maintenant d'abord | Tri par date de fin : événements du jour et expositions qui ferment bientôt en tête |
+| ⏳ En cours ou à venir | Les événements terminés sont exclus ; les expositions déjà commencées restent visibles (« En cours, jusqu'au … », « Dernier jour : aujourd'hui ») |
+| ➕ Pagination | `Voir plus d'événements` charge les 9 suivants depuis l'API |
+| ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
 | 📄 Détails dépliables | Informations complémentaires avec `Voir plus` / `Voir moins` |
 | 📍 Infos utiles | Date, prix, adresse, description et contact selon les données disponibles |
 | 📌 En-tête sticky | Header réductible pour garder plus de place aux cartes |
@@ -44,7 +46,8 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 |---|---|
 | Frontend | HTML, CSS, JavaScript modulaire |
 | Build tool | Vite |
-| Données | API Open Data Paris |
+| Données | API Open Data Paris (requêtes ODSQL) |
+| Tests | Vitest + jsdom |
 | Déploiement | Vercel |
 
 ---
@@ -55,11 +58,15 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 adataviz-patphiletas/
 ├── index.html
 ├── package.json
-└── src/
-    ├── main.js      # Initialisation, tri, recherche, filtres et pagination
-    ├── event.js     # Récupération des données depuis l'API Open Data Paris
-    ├── dom.js       # Génération des cartes et interactions UI
-    └── style.css    # Mise en page et responsive
+├── src/
+│   ├── api.js       # Construction des requêtes ODSQL et appel à l'API Open Data Paris
+│   ├── main.js      # État de la liste, recherche, tags, pagination, états, en-tête
+│   ├── dom.js       # Rendu des cartes, libellés de date, messages d'état, échappement HTML
+│   ├── event.js     # Délégation des clics sur les tags
+│   └── style.css    # Mise en page et responsive
+└── tests/
+    ├── api.test.js  # Filtres, échappement ODSQL, URL, gestion des erreurs HTTP
+    └── dom.test.js  # Échappement/sanitisation, libellés de date, cartes, messages d'état
 ```
 
 ---
@@ -70,7 +77,15 @@ Les données proviennent de l'API publique suivante :
 
 `https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/que-faire-a-paris-/records`
 
-L'application consomme directement l'endpoint côté client, sans backend intermédiaire.
+L'application consomme directement l'endpoint côté client, sans backend intermédiaire. Chaque requête envoie :
+
+| Paramètre | Valeur |
+|---|---|
+| `where` | `date_end >= now()` + `search("…")` pour la recherche + `search(qfap_tags, "…")` pour le tag |
+| `order_by` | `date_end` (ce qui se termine le plus tôt d'abord) |
+| `limit` / `offset` | 9 événements par page |
+
+Les textes saisis sont échappés (`\` et `"`) avant d'être placés dans la requête. Une nouvelle recherche annule la requête précédente (`AbortController`) pour qu'une réponse lente n'écrase pas un résultat plus récent. L'API autorise 10 000 appels par jour et par adresse IP.
 
 ---
 
@@ -94,6 +109,17 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ---
 
+## Tests
+
+```bash
+npm test          # Vitest en mode watch
+npx vitest run    # une seule exécution (30 tests)
+```
+
+Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.
+
+---
+
 ## Build de production
 
 ```bash
@@ -105,7 +131,12 @@ npm run preview
 
 ## Pistes d'amélioration
 
-- [ ] Ajouter des filtres multicritères plus avancés
+- [x] Recherche et pagination sur tous les événements (côté API)
+- [x] États de chargement, d'erreur et d'absence de résultat
+- [x] Tests automatisés (Vitest)
+- [ ] Filtres « aujourd'hui / ce week-end / cette semaine », « gratuit », arrondissement
+- [ ] Recherche et filtres dans l'URL (lien partageable)
+- [ ] Refonte visuelle
 - [ ] Mieux gérer les images ou champs manquants
 - [ ] Ajouter une carte géographique des événements
 - [ ] Permettre le tri par thématique ou par arrondissement

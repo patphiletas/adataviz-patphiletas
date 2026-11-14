@@ -1,13 +1,31 @@
+const FORMAT_DATE = { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" };
+
 function formatDate(dateString) {
-  if (!dateString) return "Date non communiquée";
+  return new Date(dateString).toLocaleDateString("fr-FR", FORMAT_DATE);
+}
 
-  const date = new Date(dateString);
+// Libellé de date d'une carte :
+// - commence aujourd'hui → « Aujourd'hui » ; commencé avant et se termine aujourd'hui → « Dernier jour : aujourd'hui »
+// - événement déjà commencé et pas terminé → « En cours, jusqu'au … »
+// - événement sur plusieurs jours à venir → « Du … au … »
+// - sinon → « Le … »
+export function libelleDate(evenement, maintenant = new Date()) {
+  const { date_start: debut, date_end: fin } = evenement ?? {};
+  if (!debut) return "Date non communiquée";
 
-  return date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
+  const dateDebut = new Date(debut);
+  const dateFin = fin ? new Date(fin) : null;
+
+  const aujourdhui = formatDate(maintenant);
+  if (formatDate(debut) === aujourdhui) return "Aujourd'hui";
+  if (dateFin && dateDebut <= maintenant && dateFin >= maintenant) {
+    if (formatDate(fin) === aujourdhui) return "Dernier jour : aujourd'hui";
+    return `En cours, jusqu'au ${formatDate(fin)}`;
+  }
+  if (dateFin && formatDate(debut) !== formatDate(fin)) {
+    return `Du ${formatDate(debut)} au ${formatDate(fin)}`;
+  }
+  return `Le ${formatDate(debut)}`;
 }
 
 // -----------------
@@ -23,7 +41,7 @@ export function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function safeUrl(value) {
+export function safeUrl(value) {
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
@@ -77,7 +95,7 @@ export function afficherCards(data) {
   const tags = data.qfap_tags
     ? data.qfap_tags.split(";").map(tag => tag.trim())
     : [];
-  const dateLisible = formatDate(data.date_start);
+  const dateLisible = libelleDate(data);
 
   const e = escapeHtml;
   const cover = safeUrl(data.cover_url);
@@ -91,7 +109,7 @@ export function afficherCards(data) {
       <h2>${e(data.title)}</h2>
       <h3>${e(data.address_name)}</h3>
       ${cover ? `<img src="${e(cover)}" alt="${e(data.title)}" width="300" loading="lazy">` : ""}
-      <p><strong>Date :</strong> ${e(dateLisible)}</p>
+      <p class="date">${e(dateLisible)}</p>
 
       <div class="descriptionHidden hidden">
         <p><strong>Prix :</strong> ${e(data.price_type ?? "Non communiqué")} ${e(data.price_detail)}</p>
@@ -109,6 +127,20 @@ export function afficherCards(data) {
     </div>
   `;
 }
+// --------------------
+// Messages d'état (chargement, erreur, aucun résultat) affichés à la place des cartes
+
+export function messageEtat(type, texte, { reessayer = false } = {}) {
+  const role = type === "erreur" ? "alert" : "status";
+  return `
+    <div class="etat etat-${escapeHtml(type)}" role="${role}">
+      ${type === "chargement" ? '<span class="spinner" aria-hidden="true"></span>' : ""}
+      <p>${escapeHtml(texte)}</p>
+      ${reessayer ? '<button type="button" id="reessayer">Réessayer</button>' : ""}
+    </div>
+  `;
+}
+
 // --------------------
 
 

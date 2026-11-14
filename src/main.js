@@ -1,56 +1,107 @@
-import { recupererDonnees } from './event.js';
-import { afficherCards, activerToggleDescription, escapeHtml } from "./dom.js";
-import { activerTags } from './event.js';
+import { chargerEvenements, TAILLE_PAGE } from "./api.js";
+import { afficherCards, activerToggleDescription, messageEtat } from "./dom.js";
+import { activerTags } from "./event.js";
 
-let dataTotal = [];
-let currentIndex = 0;
-const limit = 3;
 const MIN_VISIBLE_LEVEL_HEIGHT = 260;
+const DELAI_RECHERCHE_MS = 300;
 
-let tagActif = null; 
-window.gererTagClick = gererTagClick; 
+// État de la liste : ce qui est demandé à l'API et ce qui est déjà affiché.
+const etat = {
+  recherche: "",
+  tag: null,
+  offset: 0,
+  total: 0,
+};
 
-//----------------------
-// Tri des données par date croissante
+// Chaque nouvelle requête annule la précédente : une réponse lente ne peut
+// pas écraser le résultat d'une recherche plus récente.
+let controleur = null;
+let minuterieRecherche = null;
 
-function trierDonneesParDate(data) {
-  return data.sort((a, b) => {
-    const dateA = new Date(a.date_start);
-    const dateB = new Date(b.date_start);
-    
-    if (!a.date_start) return 1;
-    if (!b.date_start) return -1;
+window.gererTagClick = gererTagClick;
 
-    return dateA - dateB; 
-  });
-}
+initialiserPage();
+activerToggleDescription();
+activerTags();
+charger({ reinitialiser: true });
+
 // -----------------------
-// Affichage des données
+// Chargement depuis l'API
 
-async function afficherDonnees() {
-  dataTotal = await recupererDonnees(); 
-  
-  dataTotal = trierDonneesParDate(dataTotal); 
+async function charger({ reinitialiser }) {
+  const liste = document.getElementById("cards-list");
+  const voirPlus = document.getElementById("voirPlus");
 
+  controleur?.abort();
+  controleur = new AbortController();
+  const { signal } = controleur;
 
-  const maintenant = new Date();
-  
-  dataTotal = dataTotal.filter(event => {
-    if (!event.date_start) {
+  if (reinitialiser) {
+    etat.offset = 0;
+    liste.innerHTML = messageEtat("chargement", "Chargement des événements…");
+    voirPlus.style.display = "none";
+  } else {
+    voirPlus.disabled = true;
+    voirPlus.textContent = "Chargement…";
+  }
 
-      return false; 
+  try {
+    const { evenements, total } = await chargerEvenements(
+      { recherche: etat.recherche, tag: etat.tag ?? "", offset: etat.offset, limit: TAILLE_PAGE },
+      { signal }
+    );
+    etat.total = total;
+
+    const cartes = evenements.map(afficherCards).join("");
+    if (reinitialiser) {
+      liste.innerHTML = cartes || messageEtat("vide", messageAucunResultat());
+    } else {
+      liste.insertAdjacentHTML("beforeend", cartes);
     }
-    const dateDebut = new Date(event.date_start);
-    
-    return dateDebut >= maintenant;
-  });
-
-  initialiserPage();   
-  afficherMorceaux(); 
-  activerToggleDescription();
-  requestAnimationFrame(ajusterHeaderSelonHauteur);
+    etat.offset += evenements.length;
+    afficherCompteur();
+    marquerTagActif();
+    voirPlus.style.display = etat.offset < etat.total ? "block" : "none";
+  } catch (erreur) {
+    if (erreur.name === "AbortError") return;
+    console.error(erreur);
+    if (reinitialiser) {
+      liste.innerHTML = messageEtat(
+        "erreur",
+        "Impossible de charger les événements. Vérifiez votre connexion puis réessayez.",
+        { reessayer: true }
+      );
+    } else {
+      voirPlus.style.display = "block";
+    }
+  } finally {
+    voirPlus.disabled = false;
+    voirPlus.textContent = "Voir plus d'événements";
+    requestAnimationFrame(ajusterHeaderSelonHauteur);
+  }
 }
-afficherDonnees()
+
+function messageAucunResultat() {
+  if (etat.recherche && etat.tag) {
+    return `Aucun événement à venir pour « ${etat.recherche} » avec le tag « ${etat.tag} ».`;
+  }
+  if (etat.recherche) return `Aucun événement à venir ne correspond à « ${etat.recherche} ».`;
+  if (etat.tag) return `Aucun événement à venir pour le tag « ${etat.tag} ».`;
+  return "Aucun événement à venir pour le moment.";
+}
+
+function afficherCompteur() {
+  const compteur = document.getElementById("compteur");
+  if (!compteur) return;
+  if (etat.total === 0) {
+    compteur.textContent = "";
+    return;
+  }
+  const nombre = etat.total.toLocaleString("fr-FR");
+  const pluriel = etat.total > 1 ? "s" : "";
+  const filtre = etat.tag ? ` · tag « ${etat.tag} »` : "";
+  compteur.textContent = `${nombre} événement${pluriel} en cours ou à venir${filtre}`;
+}
 
 // -------------------
 // Initialisation de la page
@@ -107,7 +158,8 @@ function initialiserPage() {
   `;
 
   conteneur.innerHTML = `
-    <div id="cards-list"></div>
+    <p id="compteur" aria-live="polite"></p>
+    <div id="cards-list" aria-live="polite"></div>
     <button id="voirPlus">Voir plus d'événements</button>
     <button id="debutBtn" style="display: none;">↑ Haut de page</button>
   `;
@@ -119,18 +171,23 @@ function initialiserPage() {
   
   searchInput.addEventListener("input", (ev) => {
     const value = ev.target.value;
-    rechercherEvenements(value);
+    lancerRecherche(value);
     clearBtn.style.display = value ? "block" : "none";
   });
 
   clearBtn.addEventListener("click", () => {
     searchInput.value = "";
     clearBtn.style.display = "none";
-    resetAffichage();
+    lancerRecherche("");
   });
 
   // Voir plus
-  document.getElementById("voirPlus").addEventListener("click", afficherMorceaux);
+  document.getElementById("voirPlus").addEventListener("click", () => charger({ reinitialiser: false }));
+
+  // Réessayer après une erreur de chargement
+  conteneur.addEventListener("click", (event) => {
+    if (event.target.id === "reessayer") charger({ reinitialiser: true });
+  });
 
   // Retour haut de page
   document.getElementById("debutBtn").addEventListener("click", () => {
@@ -152,135 +209,37 @@ function initialiserPage() {
 }
 
 // -----------------
-// Reset affichage
+// Recherche, tags, réinitialisation
 
-async function resetAffichage() {
-
-  // Remet les 3 cartes du début
-  const data = dataTotal.slice(0, 3);
-  currentIndex = 3;
-
-  const cardsList = document.getElementById("cards-list");
-  cardsList.innerHTML = data.map(afficherCards).join("");
-
-  // Reset UI
-  document.getElementById("voirPlus").style.display = "block";
-  document.getElementById("search").value = "";
-  document.getElementById("clear-search").style.display = "none";
-  document.querySelectorAll(".tag.active").forEach(tag => tag.classList.remove("active"));
-  tagActif = null; 
-
-  activerTags();
-  requestAnimationFrame(ajusterHeaderSelonHauteur);
+function lancerRecherche(valeur) {
+  clearTimeout(minuterieRecherche);
+  minuterieRecherche = setTimeout(() => {
+    const recherche = valeur.trim();
+    if (recherche === etat.recherche) return;
+    etat.recherche = recherche;
+    charger({ reinitialiser: true });
+  }, DELAI_RECHERCHE_MS);
 }
-
-// -----------------
-// Affichage cartes supplémentaires
-
-function afficherMorceaux() {
-  const target = document.getElementById("cards-list");
-  const slice = dataTotal.slice(currentIndex, currentIndex + limit);
-
-  target.insertAdjacentHTML("beforeend", slice.map(afficherCards).join(""));
-
-  currentIndex += limit;
-
-  if (currentIndex >= dataTotal.length) {
-    document.getElementById("voirPlus").style.display = "none";
-  }
-
-  activerTags();
-  requestAnimationFrame(ajusterHeaderSelonHauteur);
-}
-
-// -----------------------
-// Recherche d'événements
-
-function rechercherEvenements(query = "") {
-  const cardsList = document.getElementById("cards-list");
-  cardsList.innerHTML = "";
-
-  const voirPlusBtn = document.getElementById("voirPlus"); 
-  
-  const normalizedQuery = query.trim().toLowerCase();
-
-  const filteredData = dataTotal.filter(event => {
-    const title = event.title?.toLowerCase() ?? "";
-    const description = event.description?.toLowerCase() ?? "";
-    const tags = event.qfap_tags?.toLowerCase() ?? "";
-    const audience = event.audience?.toLowerCase() ?? "";
-
-    return (
-      title.includes(normalizedQuery) ||
-      description.includes(normalizedQuery) ||
-      tags.includes(normalizedQuery) ||
-      audience.includes(normalizedQuery)
-    );
-  });
-
-  if (filteredData.length === 0) {
-    cardsList.innerHTML = `
-      <div class="no-results">
-        Aucun événement ne correspond à « ${escapeHtml(query)} ».
-      </div>
-    `;
-    
-    voirPlusBtn.style.display = "none"; 
-    requestAnimationFrame(ajusterHeaderSelonHauteur);
-    return;
-  }
-  
-  cardsList.innerHTML = filteredData.map(afficherCards).join("");
-  
-
-  activerTags();
-  requestAnimationFrame(ajusterHeaderSelonHauteur);
-}
-
-// ------------------
-// Gestion des tags
 
 function gererTagClick(tag) {
-  if (tag === tagActif) {
-    tagActif = null;
-    resetAffichage();
-  } else {
-    tagActif = tag;
-    filtrerParTag(tag);
-  }
+  etat.tag = tag === etat.tag ? null : tag;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  charger({ reinitialiser: true });
 }
 
-// --------------------
-// Filtrage par tag
+function marquerTagActif() {
+  document.querySelectorAll(".tag").forEach((tagEl) => {
+    tagEl.classList.toggle("active", tagEl.dataset.tag === etat.tag);
+  });
+}
 
-function filtrerParTag(tag) {
-  const conteneur = document.getElementById("cards-list");
-  conteneur.innerHTML = "";
-
-  document.getElementById("voirPlus").style.display = "none";
+function resetAffichage() {
+  clearTimeout(minuterieRecherche);
   document.getElementById("search").value = "";
   document.getElementById("clear-search").style.display = "none";
-
-  const filtered = dataTotal.filter(evt =>
-    evt.qfap_tags?.toLowerCase().includes(tag.toLowerCase())
-  );
-
-  if (filtered.length === 0) {
-    conteneur.innerHTML = `<div class="no-results">Aucun événement trouvé pour le tag « ${escapeHtml(tag)} ».</div>`;
-  } else {
-    conteneur.innerHTML = filtered.map(afficherCards).join("");
-  }
-
-  document.querySelectorAll(".tag").forEach(tagEl => {
-    if (tagEl.dataset.tag === tagActif) {
-      tagEl.classList.add("active");
-    } else {
-      tagEl.classList.remove("active");
-    }
-  });
-
-  activerTags();
-  requestAnimationFrame(ajusterHeaderSelonHauteur);
+  etat.recherche = "";
+  etat.tag = null;
+  charger({ reinitialiser: true });
 }
 
 function getVisibleLevelHeight() {
@@ -317,8 +276,6 @@ function ajusterHeaderSelonHauteur() {
 
   updateHeaderToggleState();
 }
-
-window.filtrerParTag = filtrerParTag;
 
 window.addEventListener("scroll", () => {
   const btn = document.getElementById("debutBtn");
