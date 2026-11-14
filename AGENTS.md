@@ -13,7 +13,8 @@ Application front-end en **JavaScript vanilla + Vite** qui affiche les événeme
 ```
 index.html          # Page unique ; le header et la liste sont générés par src/main.js
 src/
-  api.js            # Requêtes ODSQL (construireFiltre, construireUrl) + chargerEvenements
+  api.js            # Requêtes ODSQL (construireFiltre, construireUrl), periode(), codesPostaux(), chargerEvenements
+  filtres.js        # Filtres ↔ URL (lireFiltres, ecrireFiltres), libellés, resumeFiltres
   main.js           # État de la liste, recherche (debounce), tags, pagination, états, header
   dom.js            # Rendu d'une carte, libelleDate, messageEtat, échappement/sanitisation HTML
   event.js          # Délégation des clics sur les tags
@@ -43,6 +44,8 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Critère « à venir » = `date_end >= now()` (pas `date_start`), tri `order_by=date_end`.
 - Toute valeur insérée dans une requête ODSQL passe par `echapperOdsql()`.
 - Chaque chargement annule le précédent (`AbortController` dans `charger()` de `main.js`) ; la recherche attend 300 ms après la frappe.
+- Les filtres vivent dans `etat.filtres` (`main.js`) : `{ recherche, tag, quand, gratuit, arrondissement }`. Ils sont lus depuis l'URL au chargement et réécrits avec `history.replaceState` à chaque chargement. `synchroniserControles()` remet les champs en accord avec l'état. Tout nouveau filtre : l'ajouter à `filtresVides`, `lireFiltres`, `ecrireFiltres`, `resumeFiltres` et `construireFiltre`, avec des tests.
+- Les périodes (« aujourd'hui », « ce week-end », « 7 prochains jours ») sont calculées **à l'heure de Paris** dans `periode()`, quel que soit le fuseau du navigateur ; un événement est retenu s'il chevauche la période.
 - Erreur réseau/HTTP → `chargerEvenements` lève une erreur → message `messageEtat("erreur", …, { reessayer: true })`.
 
 ## Conventions
@@ -68,8 +71,8 @@ npx vitest run    # une exécution
 
 Ajouter un test pour toute modification de `api.js` (filtre, URL, erreurs) ou de `dom.js` (échappement, dates, cartes). Les tests ne doivent pas appeler le réseau : passer `fetchFn` à `chargerEvenements`.
 
-Vérifier aussi à la main dans le navigateur : compteur au chargement, recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Réinitialiser », « Voir plus / Voir moins » sur une carte, et le message d'erreur (couper le réseau dans les DevTools).
+Vérifier aussi à la main dans le navigateur : compteur au chargement, chaque filtre (quand, gratuit, arrondissement) et l'URL qui suit, un lien avec filtres ouvert dans un nouvel onglet, recherche (y compris avec du HTML tapé dans le champ), clic sur un tag puis re-clic, « Voir plus d'événements », « Réinitialiser », « Voir plus / Voir moins » sur une carte, et le message d'erreur (couper le réseau dans les DevTools).
 
 ## Pistes d'évolution notées
 
-Refonte visuelle, filtres « aujourd'hui / ce week-end / gratuit » (`price_type`), filtre par arrondissement (`address_zipcode`) ou vue carte (`lat_lon`), recherche dans l'URL.
+Refonte visuelle, vue carte (`lat_lon`), accessibilité, Lighthouse, favicon/OG.

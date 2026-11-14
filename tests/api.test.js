@@ -1,5 +1,18 @@
 import { describe, it, expect, vi } from "vitest";
-import { echapperOdsql, construireFiltre, construireUrl, chargerEvenements, API_URL, TAILLE_PAGE } from "../src/api.js";
+import {
+  echapperOdsql,
+  construireFiltre,
+  construireUrl,
+  chargerEvenements,
+  periode,
+  codesPostaux,
+  API_URL,
+  TAILLE_PAGE,
+} from "../src/api.js";
+
+// Samedi 14 novembre 2026, 13 h à Paris
+const SAMEDI = new Date("2026-11-14T12:00:00Z");
+const MERCREDI = new Date("2026-11-18T09:00:00Z");
 
 describe("echapperOdsql", () => {
   it("échappe guillemets et antislashs pour rester dans la chaîne ODSQL", () => {
@@ -84,5 +97,102 @@ describe("chargerEvenements", () => {
   it("supporte une réponse sans résultats", async () => {
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
     expect(await chargerEvenements({}, { fetchFn })).toEqual({ evenements: [], total: 0 });
+  });
+});
+
+describe("periode (heure de Paris)", () => {
+  it("aujourd'hui : de minuit à 23:59:59", () => {
+    expect(periode("aujourdhui", MERCREDI)).toEqual({
+      debut: "2026-11-18T00:00:00+01:00",
+      fin: "2026-11-18T23:59:59+01:00",
+    });
+  });
+
+  it("ce week-end, un mercredi : samedi et dimanche suivants", () => {
+    expect(periode("weekend", MERCREDI)).toEqual({
+      debut: "2026-11-21T00:00:00+01:00",
+      fin: "2026-11-22T23:59:59+01:00",
+    });
+  });
+
+  it("ce week-end, un samedi : à partir d'aujourd'hui", () => {
+    expect(periode("weekend", SAMEDI)).toEqual({
+      debut: "2026-11-14T00:00:00+01:00",
+      fin: "2026-11-15T23:59:59+01:00",
+    });
+  });
+
+  it("ce week-end, un dimanche : seulement aujourd'hui", () => {
+    expect(periode("weekend", new Date("2026-11-15T10:00:00Z"))).toEqual({
+      debut: "2026-11-15T00:00:00+01:00",
+      fin: "2026-11-15T23:59:59+01:00",
+    });
+  });
+
+  it("utilise le jour de Paris, pas celui du fuseau UTC (dimanche 23 h 30 UTC = lundi à Paris)", () => {
+    expect(periode("aujourdhui", new Date("2026-11-15T23:30:00Z")).debut).toBe("2026-11-16T00:00:00+01:00");
+  });
+
+  it("7 prochains jours : aujourd'hui + 6 jours", () => {
+    expect(periode("semaine", MERCREDI)).toEqual({
+      debut: "2026-11-18T00:00:00+01:00",
+      fin: "2026-11-24T23:59:59+01:00",
+    });
+  });
+
+  it("gère le passage à l'heure d'été", () => {
+    expect(periode("weekend", new Date("2026-03-25T12:00:00Z"))).toEqual({
+      debut: "2026-03-28T00:00:00+01:00",
+      fin: "2026-03-29T23:59:59+02:00",
+    });
+  });
+
+  it("renvoie null sans période ou pour une valeur inconnue", () => {
+    expect(periode("", MERCREDI)).toBeNull();
+    expect(periode("demain", MERCREDI)).toBeNull();
+  });
+});
+
+describe("codesPostaux", () => {
+  it("convertit un arrondissement en code postal", () => {
+    expect(codesPostaux("1")).toEqual(["75001"]);
+    expect(codesPostaux("20")).toEqual(["75020"]);
+  });
+  it("le 16e a deux codes postaux", () => {
+    expect(codesPostaux("16")).toEqual(["75016", "75116"]);
+  });
+  it("ignore les valeurs hors 1–20", () => {
+    expect(codesPostaux("")).toEqual([]);
+    expect(codesPostaux("21")).toEqual([]);
+    expect(codesPostaux('1") OR ("')).toEqual([]);
+  });
+});
+
+describe("construireFiltre avec les filtres du lot 2", () => {
+  it("période : l'événement doit chevaucher la période", () => {
+    expect(construireFiltre({ quand: "aujourdhui" }, MERCREDI)).toBe(
+      "date_end >= now() AND date_start <= date'2026-11-18T23:59:59+01:00' AND date_end >= date'2026-11-18T00:00:00+01:00'"
+    );
+  });
+
+  it("gratuit inclut « gratuit sous condition »", () => {
+    expect(construireFiltre({ gratuit: true })).toBe(
+      'date_end >= now() AND price_type in ("gratuit", "gratuit sous condition")'
+    );
+  });
+
+  it("arrondissement", () => {
+    expect(construireFiltre({ arrondissement: "16" })).toBe(
+      'date_end >= now() AND address_zipcode in ("75016", "75116")'
+    );
+  });
+
+  it("combine tous les filtres", () => {
+    const filtre = construireFiltre(
+      { recherche: "jazz", tag: "Concert", quand: "weekend", gratuit: true, arrondissement: "11" },
+      MERCREDI
+    );
+    expect(filtre.split(" AND ")).toHaveLength(7);
+    expect(filtre).toContain('address_zipcode in ("75011")');
   });
 });

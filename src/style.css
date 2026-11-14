@@ -469,3 +469,62 @@ button#voirPlus:disabled {
   opacity: 0.6;
   cursor: progress;
 }
+
+/* ---------- Barre de filtres ---------- */
+
+#filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 0 0 16px;
+}
+
+.filtres-quand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filtre-quand {
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filtre-quand[aria-pressed="true"] {
+  background: #fff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.filtre-quand:focus-visible,
+.filtre-gratuit input:focus-visible,
+#filtre-arr:focus-visible {
+  outline: 3px solid #facc15;
+  outline-offset: 2px;
+}
+
+.filtre-gratuit {
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.filtre-gratuit input {
+  width: 18px;
+  height: 18px;
+}
+
+#filtre-arr {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.9rem;
+}

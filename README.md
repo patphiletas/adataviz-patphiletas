@@ -28,7 +28,11 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 |---|---|
 | 🔎 Recherche | Recherche plein texte côté API (titre, description, lieu, tags…) sur tous les événements, déclenchée 300 ms après la frappe |
 | 🏷️ Tags interactifs | Clic sur un tag pour filtrer (combinable avec la recherche), re-clic pour l'enlever |
-| 🔢 Compteur | Nombre d'événements correspondant à la recherche et au tag |
+| 📅 Quand ? | Toutes dates / Aujourd'hui / Ce week-end / 7 prochains jours (calculés à l'heure de Paris) |
+| 🆓 Gratuit | N'affiche que les événements gratuits (y compris « gratuit sous condition ») |
+| 📍 Arrondissement | Filtre du 1er au 20e (le 16e couvre 75016 et 75116) |
+| 🔗 Lien partageable | Recherche et filtres sont repris dans l'URL, ex. `?q=jazz&quand=weekend&gratuit=1&arr=11` |
+| 🔢 Compteur | Nombre d'événements et rappel des filtres actifs, ex. « 28 événements · ce week-end · gratuits · 11e » |
 | 📅 Ce qui se passe maintenant d'abord | Tri par date de fin : événements du jour et expositions qui ferment bientôt en tête |
 | ⏳ En cours ou à venir | Les événements terminés sont exclus ; les expositions déjà commencées restent visibles (« En cours, jusqu'au … », « Dernier jour : aujourd'hui ») |
 | ➕ Pagination | `Voir plus d'événements` charge les 9 suivants depuis l'API |
@@ -59,13 +63,15 @@ adataviz-patphiletas/
 ├── index.html
 ├── package.json
 ├── src/
-│   ├── api.js       # Construction des requêtes ODSQL et appel à l'API Open Data Paris
-│   ├── main.js      # État de la liste, recherche, tags, pagination, états, en-tête
+│   ├── api.js       # Requêtes ODSQL, périodes à l'heure de Paris, codes postaux, appel à l'API
+│   ├── filtres.js   # Filtres ↔ URL, libellés, résumé du compteur
+│   ├── main.js      # État de la liste, recherche, filtres, tags, pagination, états, en-tête
 │   ├── dom.js       # Rendu des cartes, libellés de date, messages d'état, échappement HTML
 │   ├── event.js     # Délégation des clics sur les tags
 │   └── style.css    # Mise en page et responsive
 └── tests/
-    ├── api.test.js  # Filtres, échappement ODSQL, URL, gestion des erreurs HTTP
+    ├── api.test.js  # Filtres, périodes (week-end, heure d'été…), échappement ODSQL, erreurs HTTP
+    ├── filtres.test.js # Lecture/écriture des filtres dans l'URL, résumé du compteur
     └── dom.test.js  # Échappement/sanitisation, libellés de date, cartes, messages d'état
 ```
 
@@ -81,7 +87,7 @@ L'application consomme directement l'endpoint côté client, sans backend interm
 
 | Paramètre | Valeur |
 |---|---|
-| `where` | `date_end >= now()` + `search("…")` pour la recherche + `search(qfap_tags, "…")` pour le tag |
+| `where` | `date_end >= now()` + `search("…")` pour la recherche + `search(qfap_tags, "…")` pour le tag + `date_start <= date'fin' AND date_end >= date'début'` pour la période + `price_type in ("gratuit", "gratuit sous condition")` + `address_zipcode in ("750XX")` |
 | `order_by` | `date_end` (ce qui se termine le plus tôt d'abord) |
 | `limit` / `offset` | 9 événements par page |
 
@@ -113,7 +119,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (30 tests)
+npx vitest run    # une seule exécution (57 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.
@@ -134,8 +140,8 @@ npm run preview
 - [x] Recherche et pagination sur tous les événements (côté API)
 - [x] États de chargement, d'erreur et d'absence de résultat
 - [x] Tests automatisés (Vitest)
-- [ ] Filtres « aujourd'hui / ce week-end / cette semaine », « gratuit », arrondissement
-- [ ] Recherche et filtres dans l'URL (lien partageable)
+- [x] Filtres « aujourd'hui / ce week-end / 7 prochains jours », « gratuit », arrondissement
+- [x] Recherche et filtres dans l'URL (lien partageable)
 - [ ] Refonte visuelle
 - [ ] Mieux gérer les images ou champs manquants
 - [ ] Ajouter une carte géographique des événements

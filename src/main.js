@@ -1,14 +1,24 @@
 import { chargerEvenements, TAILLE_PAGE } from "./api.js";
 import { afficherCards, activerToggleDescription, messageEtat } from "./dom.js";
 import { activerTags } from "./event.js";
+import {
+  ARRONDISSEMENTS,
+  LIBELLES_QUAND,
+  aDesFiltres,
+  ecrireFiltres,
+  filtresVides,
+  libelleArrondissement,
+  lireFiltres,
+  resumeFiltres,
+} from "./filtres.js";
 
 const MIN_VISIBLE_LEVEL_HEIGHT = 260;
 const DELAI_RECHERCHE_MS = 300;
 
-// État de la liste : ce qui est demandé à l'API et ce qui est déjà affiché.
+// État de la liste : les filtres (lus dans l'URL au chargement, pour qu'un
+// lien partagé rouvre la même recherche), et ce qui est déjà affiché.
 const etat = {
-  recherche: "",
-  tag: null,
+  filtres: lireFiltres(window.location.search),
   offset: 0,
   total: 0,
 };
@@ -21,6 +31,7 @@ let minuterieRecherche = null;
 window.gererTagClick = gererTagClick;
 
 initialiserPage();
+synchroniserControles();
 activerToggleDescription();
 activerTags();
 charger({ reinitialiser: true });
@@ -38,6 +49,7 @@ async function charger({ reinitialiser }) {
 
   if (reinitialiser) {
     etat.offset = 0;
+    mettreAJourUrl();
     liste.innerHTML = messageEtat("chargement", "Chargement des événements…");
     voirPlus.style.display = "none";
   } else {
@@ -47,7 +59,7 @@ async function charger({ reinitialiser }) {
 
   try {
     const { evenements, total } = await chargerEvenements(
-      { recherche: etat.recherche, tag: etat.tag ?? "", offset: etat.offset, limit: TAILLE_PAGE },
+      { ...etat.filtres, offset: etat.offset, limit: TAILLE_PAGE },
       { signal }
     );
     etat.total = total;
@@ -82,25 +94,26 @@ async function charger({ reinitialiser }) {
 }
 
 function messageAucunResultat() {
-  if (etat.recherche && etat.tag) {
-    return `Aucun événement à venir pour « ${etat.recherche} » avec le tag « ${etat.tag} ».`;
+  const { recherche } = etat.filtres;
+  const autres = aDesFiltres({ ...etat.filtres, recherche: "" });
+  if (recherche && autres) {
+    return `Aucun événement ne correspond à « ${recherche} » avec ces filtres. Essayez d'en retirer un.`;
   }
-  if (etat.recherche) return `Aucun événement à venir ne correspond à « ${etat.recherche} ».`;
-  if (etat.tag) return `Aucun événement à venir pour le tag « ${etat.tag} ».`;
+  if (recherche) return `Aucun événement à venir ne correspond à « ${recherche} ».`;
+  if (autres) return "Aucun événement ne correspond à ces filtres. Essayez d'en retirer un.";
   return "Aucun événement à venir pour le moment.";
 }
 
 function afficherCompteur() {
   const compteur = document.getElementById("compteur");
   if (!compteur) return;
-  if (etat.total === 0) {
-    compteur.textContent = "";
-    return;
-  }
-  const nombre = etat.total.toLocaleString("fr-FR");
-  const pluriel = etat.total > 1 ? "s" : "";
-  const filtre = etat.tag ? ` · tag « ${etat.tag} »` : "";
-  compteur.textContent = `${nombre} événement${pluriel} en cours ou à venir${filtre}`;
+  compteur.textContent = etat.total === 0 ? "" : resumeFiltres(etat.filtres, etat.total);
+}
+
+// L'URL reflète les filtres (lien partageable) sans créer d'entrée d'historique.
+function mettreAJourUrl() {
+  const url = `${window.location.pathname}${ecrireFiltres(etat.filtres)}`;
+  window.history.replaceState(null, "", url);
 }
 
 // -------------------
@@ -157,7 +170,27 @@ function initialiserPage() {
     </div>
   `;
 
+  const boutonsQuand = Object.entries(LIBELLES_QUAND)
+    .map(([valeur, libelle]) => `<button type="button" class="filtre-quand" data-quand="${valeur}" aria-pressed="false">${libelle}</button>`)
+    .join("");
+  const optionsArr = ARRONDISSEMENTS
+    .map((arr) => `<option value="${arr}">${libelleArrondissement(arr)} arrondissement</option>`)
+    .join("");
+
   conteneur.innerHTML = `
+    <div id="filtres" role="group" aria-label="Filtres">
+      <div class="filtres-quand" role="group" aria-label="Quand ?">${boutonsQuand}</div>
+      <label class="filtre-gratuit">
+        <input type="checkbox" id="filtre-gratuit"> Gratuit
+      </label>
+      <label class="filtre-arr">
+        <span class="sr-only">Arrondissement</span>
+        <select id="filtre-arr">
+          <option value="">Tous les arrondissements</option>
+          ${optionsArr}
+        </select>
+      </label>
+    </div>
     <p id="compteur" aria-live="polite"></p>
     <div id="cards-list" aria-live="polite"></div>
     <button id="voirPlus">Voir plus d'événements</button>
@@ -183,6 +216,23 @@ function initialiserPage() {
 
   // Voir plus
   document.getElementById("voirPlus").addEventListener("click", () => charger({ reinitialiser: false }));
+
+  // Filtres « quand ? », gratuit, arrondissement
+  document.getElementById("filtres").addEventListener("click", (event) => {
+    const bouton = event.target.closest(".filtre-quand");
+    if (!bouton) return;
+    etat.filtres.quand = bouton.dataset.quand;
+    synchroniserControles();
+    charger({ reinitialiser: true });
+  });
+  document.getElementById("filtre-gratuit").addEventListener("change", (event) => {
+    etat.filtres.gratuit = event.target.checked;
+    charger({ reinitialiser: true });
+  });
+  document.getElementById("filtre-arr").addEventListener("change", (event) => {
+    etat.filtres.arrondissement = event.target.value;
+    charger({ reinitialiser: true });
+  });
 
   // Réessayer après une erreur de chargement
   conteneur.addEventListener("click", (event) => {
@@ -215,30 +265,41 @@ function lancerRecherche(valeur) {
   clearTimeout(minuterieRecherche);
   minuterieRecherche = setTimeout(() => {
     const recherche = valeur.trim();
-    if (recherche === etat.recherche) return;
-    etat.recherche = recherche;
+    if (recherche === etat.filtres.recherche) return;
+    etat.filtres.recherche = recherche;
     charger({ reinitialiser: true });
   }, DELAI_RECHERCHE_MS);
 }
 
 function gererTagClick(tag) {
-  etat.tag = tag === etat.tag ? null : tag;
+  etat.filtres.tag = tag === etat.filtres.tag ? "" : tag;
   window.scrollTo({ top: 0, behavior: "smooth" });
   charger({ reinitialiser: true });
 }
 
 function marquerTagActif() {
   document.querySelectorAll(".tag").forEach((tagEl) => {
-    tagEl.classList.toggle("active", tagEl.dataset.tag === etat.tag);
+    tagEl.classList.toggle("active", tagEl.dataset.tag === etat.filtres.tag);
   });
+}
+
+// Met les champs (recherche, boutons, case, liste) en accord avec etat.filtres.
+function synchroniserControles() {
+  const { recherche, quand, gratuit, arrondissement } = etat.filtres;
+  const champ = document.getElementById("search");
+  champ.value = recherche;
+  document.getElementById("clear-search").style.display = recherche ? "block" : "none";
+  document.querySelectorAll(".filtre-quand").forEach((bouton) => {
+    bouton.setAttribute("aria-pressed", String(bouton.dataset.quand === quand));
+  });
+  document.getElementById("filtre-gratuit").checked = gratuit;
+  document.getElementById("filtre-arr").value = arrondissement;
 }
 
 function resetAffichage() {
   clearTimeout(minuterieRecherche);
-  document.getElementById("search").value = "";
-  document.getElementById("clear-search").style.display = "none";
-  etat.recherche = "";
-  etat.tag = null;
+  etat.filtres = filtresVides();
+  synchroniserControles();
   charger({ reinitialiser: true });
 }
 
