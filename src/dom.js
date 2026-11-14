@@ -137,9 +137,29 @@ function lieuEtArrondissement(data) {
 }
 
 // -----------------
+// Images : celles de paris.fr font souvent 500 Ko à 1 Mo. En production, on les
+// fait redimensionner par l'API d'images de Vercel (vercel.json), en AVIF/WebP.
+// En cas d'échec, main.js remet l'image d'origine (data-original).
+
+export const LARGEURS_IMAGE = [384, 640, 828];
+
+export function urlImage(url, largeur) {
+  return `/_vercel/image?url=${encodeURIComponent(url)}&w=${largeur}&q=70`;
+}
+
+function baliseImage(cover, optimiser) {
+  const e = escapeHtml;
+  if (!optimiser || !cover.startsWith("https://cdn.paris.fr/")) {
+    return `<img class="card-image" src="${e(cover)}" alt="" loading="lazy" decoding="async">`;
+  }
+  const srcset = LARGEURS_IMAGE.map((l) => `${urlImage(cover, l)} ${l}w`).join(", ");
+  return `<img class="card-image" src="${e(urlImage(cover, 640))}" srcset="${e(srcset)}" sizes="(max-width: 600px) calc(100vw - 112px), 300px" data-original="${e(cover)}" alt="" loading="lazy" decoding="async">`;
+}
+
+// -----------------
 // Affichage d'une carte (les détails s'ouvrent dans un encart : afficherFiche)
 
-export function afficherCards(data, maintenant = new Date()) {
+export function afficherCards(data, maintenant = new Date(), { optimiserImages = false } = {}) {
   const e = escapeHtml;
   const tags = data.qfap_tags ? data.qfap_tags.split(";").map((tag) => tag.trim()).filter(Boolean) : [];
   const cover = safeUrl(data.cover_url);
@@ -152,7 +172,7 @@ export function afficherCards(data, maintenant = new Date()) {
         ${col ? `<span>${e(col.haut)}</span><b>${e(col.jour)}</b><span>${e(col.bas)}</span>` : ""}
       </div>
       <div class="card-corps">
-        ${cover ? `<img class="card-image" src="${e(cover)}" alt="" loading="lazy" decoding="async">` : ""}
+        ${cover ? baliseImage(cover, optimiserImages) : ""}
         <h2 title="${e(data.title)}">${e(data.title)}</h2>
         <p class="meta">${lieu ? `<strong>${lieu}</strong><br>` : ""}<span class="date">${e(libelleDate(data, maintenant))}</span></p>
         <div class="badges">

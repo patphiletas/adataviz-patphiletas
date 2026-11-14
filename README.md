@@ -1,8 +1,8 @@
 <div align="center">
 
-# Que faire à Paris ?
+# On sort ?
 
-**Explorer les événements à Paris en temps réel à partir de l'Open Data de la Ville de Paris.**
+**Les sorties à Paris, en cours et à venir, d'après les données ouvertes de la Ville.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel)](https://adataviz-patphiletas.vercel.app/)
 &nbsp;
@@ -18,7 +18,7 @@
 
 ## Aperçu
 
-Que faire à Paris ? est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher **tous les événements en cours ou à venir** (plus de 3 000) sous forme de cartes. La recherche, le filtre par tag et la pagination sont faits par l'API : rien n'est limité à un échantillon chargé dans le navigateur.
+On sort ? est une application front-end en JavaScript qui interroge l'API Open Data de la Ville de Paris pour afficher **tous les événements en cours ou à venir** (plus de 3 000) sous forme de cartes. La recherche, le filtre par tag et la pagination sont faits par l'API : rien n'est limité à un échantillon chargé dans le navigateur.
 
 ---
 
@@ -39,9 +39,17 @@ Que faire à Paris ? est une application front-end en JavaScript qui interroge l
 | ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
 | 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
+| 🖼️ Images allégées | En production, les images de paris.fr (souvent 500 Ko à 1 Mo) sont redimensionnées et converties en AVIF/WebP par l'API d'images de Vercel (`vercel.json`), avec retour à l'originale en cas d'échec |
+| 🔗 Partage | Icône d'onglet, image d'aperçu (Open Graph, 1200×630), `robots.txt` et `sitemap.xml` |
 | 📍 Infos utiles | Date, prix, adresse, description et contact selon les données disponibles |
 | 📌 Filtres toujours visibles | La barre de filtres reste en haut de l'écran pendant le défilement ; sur mobile elle défile horizontalement |
 | 📱 Responsive | Affichage adapté mobile, tablette et desktop |
+
+---
+
+## Nom
+
+L'app s'appelait « Que faire à Paris ? », comme le jeu de données… et comme le site officiel de la Ville (quefaire.paris.fr). Pour éviter toute confusion, elle a été renommée **On sort ?** le 2026-11-14. C'est un projet indépendant, sans lien avec la Ville de Paris ; le jeu de données « Que faire à Paris ? » est cité comme source en pied de page (licence ODbL). Le dépôt et l'adresse (`adataviz-patphiletas`) n'ont pas changé.
 
 ---
 
@@ -78,8 +86,10 @@ L'app est indépendante : pas de logo de la Ville ni d'image de banque d'images 
 
 ```text
 adataviz-patphiletas/
-├── index.html
+├── index.html       # Page, balises de partage (Open Graph), icônes
+├── vercel.json      # Redimensionnement des images de cdn.paris.fr (API d'images Vercel)
 ├── package.json
+├── public/          # favicon.svg, apple-touch-icon.png, og.png, robots.txt, sitemap.xml
 ├── src/
 │   ├── api.js       # Requêtes ODSQL, périodes à l'heure de Paris, codes postaux, appel à l'API
 │   ├── filtres.js   # Filtres ↔ URL, libellés, résumé du compteur
@@ -137,7 +147,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (71 tests)
+npx vitest run    # une seule exécution (74 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.
@@ -161,7 +171,9 @@ npm run preview
 - [x] Filtres « aujourd'hui / ce week-end / 7 prochains jours », « gratuit », arrondissement
 - [x] Recherche et filtres dans l'URL (lien partageable)
 - [x] Refonte visuelle (direction éditoriale)
-- [ ] Mieux gérer les images ou champs manquants
+- [x] Favicon, image de partage, robots.txt, sitemap
+- [x] Images redimensionnées (performance)
+- [ ] Vue carte des événements
 - [ ] Ajouter une carte géographique des événements
 - [ ] Permettre le tri par thématique ou par arrondissement
 - [ ] Améliorer encore l'accessibilité et la hiérarchie visuelle

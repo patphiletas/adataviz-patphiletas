@@ -1,5 +1,5 @@
 /* =============================================================
-   Que faire à Paris ? — direction « éditoriale »
+   On sort ? — direction « éditoriale »
    Papier crème, encre, rouge d'accent ; titrage Fraunces, texte Inter.
    ============================================================= */
 
@@ -139,8 +139,7 @@ select {
   flex: 1;
   min-width: 0;
   padding: 14px 44px 14px 16px;
-  border: 1px solid var(--encre);
-  border-right: 0;
+  border: 0;
   background: var(--blanc);
   font-size: 16px;
   border-radius: 0;
@@ -168,7 +167,7 @@ select {
 .recherche .chercher {
   padding: 0 22px;
   min-width: 110px;
-  border: 1px solid var(--encre);
+  border: 0;
   background: var(--encre);
   color: var(--papier);
   font-weight: 600;
@@ -177,7 +176,6 @@ select {
 
 .recherche .chercher:hover {
   background: var(--rouge);
-  border-color: var(--rouge);
 }
 
 /* ---------- Barre de filtres (collante) ---------- */

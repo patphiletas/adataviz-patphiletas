@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "images": {
+    "sizes": [384, 640, 828],
+    "qualities": [70],
+    "formats": ["image/avif", "image/webp"],
+    "minimumCacheTTL": 86400,
+    "remotePatterns": [{ "protocol": "https", "hostname": "cdn.paris.fr" }]
+  }
+}

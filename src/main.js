@@ -19,6 +19,9 @@ import {
 
 const DELAI_RECHERCHE_MS = 300;
 
+// Les images redimensionnées (/_vercel/image) n'existent qu'une fois déployé sur Vercel.
+const OPTIMISER_IMAGES = window.location.hostname.endsWith(".vercel.app");
+
 // État de la liste : les filtres (lus dans l'URL au chargement, pour qu'un
 // lien partagé rouvre la même recherche), et ce qui est déjà affiché.
 const etat = {
@@ -73,7 +76,9 @@ async function charger({ reinitialiser }) {
     if (reinitialiser) evenementsAffiches.clear();
     evenements.forEach((evenement) => evenementsAffiches.set(String(evenement.id), evenement));
 
-    const cartes = evenements.map((evenement) => afficherCards(evenement)).join("");
+    const cartes = evenements
+      .map((evenement) => afficherCards(evenement, new Date(), { optimiserImages: OPTIMISER_IMAGES }))
+      .join("");
     if (reinitialiser) {
       liste.innerHTML = cartes || messageEtat("vide", messageAucunResultat(), { reinitialiser: true });
     } else {
@@ -211,6 +216,19 @@ function initialiserPage() {
   fiche.addEventListener("click", (event) => {
     if (event.target === fiche) fiche.close();
   });
+
+  // Image redimensionnée indisponible (quota, erreur) : on revient à l'originale
+  document.getElementById("cards-list").addEventListener(
+    "error",
+    (event) => {
+      const img = event.target;
+      if (img.tagName !== "IMG" || !img.dataset.original) return;
+      img.removeAttribute("srcset");
+      img.src = img.dataset.original;
+      delete img.dataset.original;
+    },
+    true
+  );
 
   // Retour en haut
   const haut = document.getElementById("debutBtn");

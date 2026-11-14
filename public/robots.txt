@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://adataviz-patphiletas.vercel.app/sitemap.xml

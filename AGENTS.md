@@ -1,8 +1,10 @@
-# AGENTS.md — Que faire à Paris ?
+# AGENTS.md — On sort ?
 
 Instructions pour tout agent IA (Claude Code ou autre) qui travaille sur ce projet. Mettre à jour ce fichier (et le README si besoin) à chaque changement qui touche l'architecture, la sécurité ou les conventions ci-dessous.
 
 ## Le projet en une phrase
+
+**Nom : « On sort ? »** (renommé le 2026-11-14 : « Que faire à Paris ? » est le nom du site officiel de la Ville, quefaire.paris.fr). Ne pas réutiliser l'ancien nom ni l'identité visuelle de la Ville ; le jeu de données « que-faire-a-paris- » reste cité comme source en pied de page, avec la mention « Projet indépendant, sans lien avec la Ville de Paris ».
 
 Application front-end en **JavaScript vanilla + Vite** qui affiche les événements en cours ou à venir à Paris à partir de l'API Open Data de la Ville (`que-faire-a-paris-`), avec recherche, filtre par tag et chargement progressif — **tous faits par l'API**. Déployée sur Vercel : https://adataviz-patphiletas.vercel.app
 
@@ -20,7 +22,8 @@ src/
   event.js          # Délégation des clics sur les tags
   style.css
 tests/              # Vitest (api.test.js en Node, dom.test.js en jsdom)
-public/             # (vide) — pas de logo de la Ville ni d'image de banque d'images
+public/             # favicon.svg, apple-touch-icon.png, og.png (1200×630), robots.txt, sitemap.xml
+vercel.json         # API d'images Vercel : tailles 384/640/828, qualité 70, hôte cdn.paris.fr
 docs/               # sujet du projet (PDF), base de données de départ, carte mentale
 que-faire-a-paris-.json   # échantillon du jeu de données (référence, non chargé par l'app)
 ```
@@ -57,6 +60,12 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Peu de filets : pas de filet sous les cartes (séparées par l'espace, `gap` de la grille).
 - Pas de logo « Mairie de Paris » ni d'image de banque d'images (l'ancienne était une « Preview » AdobeStock filigranée, non licenciée) : l'app est indépendante, la source est citée en pied de page.
 - Mobile (< 600 px) : la barre de filtres défile horizontalement ; vérifier qu'aucun élément ne fait déborder la page (`document.documentElement.scrollWidth` = largeur d'écran).
+
+## Performance et partage
+
+- Images : `afficherCards(e, maintenant, { optimiserImages })`. En production (`*.vercel.app`), `src`/`srcset` passent par `/_vercel/image?url=…&w=…&q=70` ; `w` doit être dans `LARGEURS_IMAGE` **et** dans `images.sizes` de `vercel.json` (sinon erreur 400), `q` dans `images.qualities`. `data-original` garde l'image d'origine : `main.js` y revient si l'image optimisée échoue (quota du plan Hobby, erreur). En local (Vite), les images d'origine sont utilisées.
+- Balises Open Graph et icônes dans `index.html`. `og.png` a été généré en HTML (polices Fraunces/Inter) puis capturé avec Chrome headless en 1200×630 ; le refaire si le titre ou le design change.
+- Audit Lighthouse mobile du 2026-11-14 (avant images optimisées) : performance 67, accessibilité 100, bonnes pratiques 96 (cookie tiers de cdn.paris.fr, hors de notre contrôle), SEO 92 (robots.txt manquant, ajouté depuis).
 
 ## Conventions
 

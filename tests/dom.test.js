@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate } from "../src/dom.js";
+import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate, urlImage } from "../src/dom.js";
 
 const MAINTENANT = new Date("2026-11-14T12:00:00+01:00");
 
@@ -204,5 +204,24 @@ describe("messageEtat", () => {
   });
   it("affiche un indicateur pendant le chargement", () => {
     expect(messageEtat("chargement", "Chargement…")).toContain('class="spinner"');
+  });
+});
+
+describe("images redimensionnées", () => {
+  const evenement = { title: "X", cover_url: "https://cdn.paris.fr/qfapv4/2026/05/26/huge-abc.jpg" };
+
+  it("construit l'URL de l'API d'images de Vercel", () => {
+    expect(urlImage("https://cdn.paris.fr/a b.jpg", 640)).toBe("/_vercel/image?url=https%3A%2F%2Fcdn.paris.fr%2Fa%20b.jpg&w=640&q=70");
+  });
+
+  it("utilise srcset et garde l'originale en secours quand l'optimisation est active", () => {
+    const html = afficherCards(evenement, MAINTENANT, { optimiserImages: true });
+    expect(html).toContain("&amp;w=384&amp;q=70 384w");
+    expect(html).toContain('data-original="https://cdn.paris.fr/qfapv4/2026/05/26/huge-abc.jpg"');
+  });
+
+  it("garde l'image d'origine hors production ou pour un autre domaine", () => {
+    expect(afficherCards(evenement, MAINTENANT)).not.toContain("_vercel");
+    expect(afficherCards({ ...evenement, cover_url: "https://autre.fr/a.jpg" }, MAINTENANT, { optimiserImages: true })).not.toContain("_vercel");
   });
 });
