@@ -42,7 +42,7 @@ On sort ? est une application front-end en JavaScript qui interroge l'API Open D
 | 🖱️ Survol | Au survol d'une carte, l'image grossit légèrement dans son cadre et le titre passe en rouge ; un clic sur l'image ouvre l'encart (effet désactivé si « réduire les animations » est activé) |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
 | 🖼️ Images allégées | En production, les images de paris.fr (souvent 500 Ko à 1 Mo) sont redimensionnées et converties en AVIF/WebP par l'API d'images de Vercel (`vercel.json`), avec retour à l'originale en cas d'échec |
-| ⚡ Performance | Lighthouse mobile : accessibilité, bonnes pratiques et SEO à 100 ; hauteur réservée pour éviter que la page saute à l'arrivée des cartes |
+| ⚡ Performance | Lighthouse mobile en production : performance 97, accessibilité 100, bonnes pratiques 100, SEO 100 ; hauteur réservée pour éviter que la page saute à l'arrivée des cartes |
 | 🔗 Partage | Icône d'onglet, image d'aperçu (Open Graph, 1200×630), `robots.txt` et `sitemap.xml` |
 | 📍 Infos utiles | Date, prix, adresse, description et contact selon les données disponibles |
 | 📌 Filtres toujours visibles | La barre de filtres reste en haut de l'écran pendant le défilement ; sur mobile elle défile horizontalement |
