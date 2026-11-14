@@ -269,3 +269,17 @@ describe("vidéos intégrées dans les descriptions", () => {
     expect(afficherCards({ id: "1", title: "X", description: "<p>rien</p>" }, MAINTENANT)).toContain(">Infos pratiques</button>");
   });
 });
+
+import { themeInitial } from "../src/theme.js";
+
+describe("mode nuit", () => {
+  it("respecte le choix mémorisé", () => {
+    expect(themeInitial("dark", false)).toBe("dark");
+    expect(themeInitial("light", true)).toBe("light");
+  });
+  it("suit le réglage de l'appareil sinon", () => {
+    expect(themeInitial(null, true)).toBe("dark");
+    expect(themeInitial(null, false)).toBe("light");
+    expect(themeInitial("n'importe quoi", true)).toBe("dark");
+  });
+});

@@ -6,6 +6,15 @@
   <title>On sort ? — les sorties à Paris, en cours et à venir</title>
   <meta name="description" content="Concerts, expos, ateliers : tous les événements en cours et à venir à Paris, d'après les données ouvertes de la Ville.">
   <meta name="theme-color" content="#f6f1e7">
+  <script>
+    // Mode nuit appliqué avant l'affichage (évite un flash clair) — voir src/theme.js
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("theme"); } catch (e) {}
+      if (t !== "dark" && t !== "light") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="canonical" href="https://adataviz-patphiletas.vercel.app/">
@@ -28,6 +37,7 @@
   <a class="evitement" href="#liste">Aller aux événements</a>
 
   <header class="entete">
+    <button type="button" id="bouton-theme" class="bouton-theme" aria-pressed="false" aria-label="Passer en mode nuit">☾</button>
     <p class="surtitre">Les sorties à Paris · d'après les données ouvertes de la Ville</p>
     <h1>On <em>sort</em>&nbsp;?</h1>
     <p class="chapo">Concerts, expositions, ateliers : tous les rendez-vous en cours ou à venir, mis à jour chaque jour.</p>

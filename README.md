@@ -39,6 +39,7 @@ On sort ? est une application front-end en JavaScript qui interroge l'API Open D
 | ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
 | 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
 | ▶️ Vidéos | Les 110 vidéos YouTube et Vimeo intégrées dans les descriptions sont reprises dans l'encart : bouton « Lire la vidéo », lecteur chargé seulement au clic (YouTube sans cookie, Vimeo sans suivi) ; la carte affiche « Infos pratiques et vidéo » |
+| 🌙 Mode nuit | Bouton soleil / lune en haut à droite ; suit d'abord le réglage de l'appareil, puis retient le choix (localStorage) ; appliqué avant l'affichage, sans flash clair |
 | 🖱️ Survol | Au survol d'une carte, l'image grossit légèrement dans son cadre et le titre passe en rouge ; un clic sur l'image ouvre l'encart (effet désactivé si « réduire les animations » est activé) |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
 | 🖼️ Images allégées | En production, les images de paris.fr (souvent 500 Ko à 1 Mo) sont redimensionnées et converties en AVIF/WebP par l'API d'images de Vercel (`vercel.json`), avec retour à l'originale en cas d'échec |
@@ -95,6 +96,7 @@ adataviz-patphiletas/
 ├── public/          # favicon.svg, apple-touch-icon.png, og.png, robots.txt, sitemap.xml
 ├── src/
 │   ├── api.js       # Requêtes ODSQL, périodes à l'heure de Paris, codes postaux, appel à l'API
+│   ├── theme.js     # Mode nuit : thème initial, bouton soleil / lune
 │   ├── filtres.js   # Filtres ↔ URL, libellés, résumé du compteur
 │   ├── main.js      # État de la liste, recherche, filtres, tags, pagination, états, en-tête
 │   ├── dom.js       # Rendu des cartes, libellés de date, messages d'état, échappement HTML
@@ -150,7 +152,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (80 tests)
+npx vitest run    # une seule exécution (82 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.

@@ -16,6 +16,7 @@ Application front-end en **JavaScript vanilla + Vite** qui affiche les événeme
 index.html          # Page unique : en-tête, recherche, conteneurs (filtres, liste), pied de page
 src/
   api.js            # Requêtes ODSQL (construireFiltre, construireUrl), periode(), codesPostaux(), chargerEvenements
+  theme.js          # Mode nuit (themeInitial, appliquerTheme, activerBoutonTheme)
   filtres.js        # Filtres ↔ URL (lireFiltres, ecrireFiltres), libellés, resumeFiltres
   main.js           # Imports polices/CSS, état de la liste, recherche (debounce), filtres, tags, pagination, états
   dom.js            # Rendu d'une carte, libelleDate, messageEtat, échappement/sanitisation HTML
@@ -55,6 +56,7 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 ## Design (direction éditoriale, choisie le 2026-11-14)
 
 - Variables de couleur dans `:root` de `src/style.css` : `--papier`, `--encre`, `--rouge` (Gratuit, accents), `--bleu` (Payant), `--gris`, `--filet`. Ne pas introduire de couleur en dur ; vérifier tout nouveau contraste de texte (≥ 4,5:1).
+- Mode nuit : `:root[data-theme="dark"]` redéfinit les variables (papier encre, accents éclaircis, contrastes ≥ 4,5:1 vérifiés). Le script en ligne dans `<head>` (index.html) pose `data-theme` avant l'affichage ; `src/theme.js` gère le bouton et `localStorage` (« theme »). Toute nouvelle couleur doit passer par une variable, sinon elle ne s'inversera pas. Exception voulue : le bloc vidéo reste noir dans les deux thèmes.
 - Polices auto-hébergées via `@fontsource-variable/fraunces` (titres) et `@fontsource-variable/inter` (texte), importées en tête de `main.js`. Pas de Google Fonts (vie privée).
 - Une carte = `<article class="card">` : colonne de date (`colonneDate()`), image 3:2, titre serif graisse 500 coupé à 3 lignes (`line-clamp`, titre complet en `title`), lieu · arrondissement, libellé de date, badges (prix + tags en `<button>`), bouton « Infos pratiques ».
 - « Infos pratiques » ouvre l'encart `<dialog id="fiche">` (index.html) rempli par `afficherFiche()` depuis `evenementsAffiches` (Map par `id`, dans `main.js`). Ne pas revenir à un dépliage dans la carte : il décalait toute la rangée suivante.

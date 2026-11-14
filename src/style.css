@@ -16,6 +16,23 @@
   --serif: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --largeur: 1120px;
+  --voile: rgba(246, 241, 231, 0.94);
+  color-scheme: light;
+}
+
+/* Mode nuit : encre et papier inversés, accents éclaircis (contrastes ≥ 4,5:1 sur --papier) */
+:root[data-theme="dark"] {
+  --papier: #16130f;
+  --papier-fonce: #26211b;
+  --blanc: #211c17;
+  --encre: #f1ebdf;
+  --gris: #b4ab9d;          /* 8.4:1 */
+  --rouge: #f0735a;         /* 6.2:1 */
+  --bleu: #93b3e8;          /* 8.6:1 */
+  --filet: #3b342c;
+  --focus: #8ab4ff;
+  --voile: rgba(22, 19, 15, 0.94);
+  color-scheme: dark;
 }
 
 *,
@@ -95,6 +112,28 @@ select {
   max-width: var(--largeur);
   margin: 0 auto;
   padding: 56px 24px 28px;
+}
+
+.entete {
+  position: relative;
+}
+
+.bouton-theme {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--filet);
+  border-radius: 50%;
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bouton-theme:hover {
+  border-color: var(--encre);
 }
 
 .surtitre {
@@ -183,7 +222,7 @@ select {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(246, 241, 231, 0.94);
+  background: var(--voile);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--filet);
 }
@@ -529,7 +568,7 @@ button.badge:hover {
 .video {
   margin: 0 0 18px;
   aspect-ratio: 16 / 9;
-  background: var(--encre);
+  background: #1a1714;
 }
 
 .video-lancer,
@@ -545,8 +584,8 @@ button.badge:hover {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: var(--encre);
-  color: var(--papier);
+  background: #1a1714;
+  color: #f6f1e7;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -563,7 +602,7 @@ button.badge:hover {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  border: 1.5px solid var(--papier);
+  border: 1.5px solid #f6f1e7;
   font-size: 22px;
   padding-left: 4px;
 }
@@ -747,6 +786,11 @@ button.badge:hover {
 
   .recherche .effacer {
     right: 96px;
+  }
+
+  .bouton-theme {
+    top: 12px;
+    right: 16px;
   }
 
   /* Encart en feuille depuis le bas de l'écran */

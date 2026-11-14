@@ -6,6 +6,7 @@ import "./style.css";
 import { chargerEvenements, TAILLE_PAGE } from "./api.js";
 import { afficherCards, afficherFiche, messageEtat, urlLecteur } from "./dom.js";
 import { activerTags } from "./event.js";
+import { activerBoutonTheme } from "./theme.js";
 import {
   ARRONDISSEMENTS,
   LIBELLES_QUAND,
@@ -41,6 +42,7 @@ const evenementsAffiches = new Map();
 window.gererTagClick = gererTagClick;
 
 initialiserPage();
+activerBoutonTheme();
 synchroniserControles();
 activerTags();
 charger({ reinitialiser: true });
