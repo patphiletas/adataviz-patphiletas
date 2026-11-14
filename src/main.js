@@ -1,5 +1,5 @@
 import { recupererDonnees } from './event.js';
-import { afficherCards, activerToggleDescription } from "./dom.js";
+import { afficherCards, activerToggleDescription, escapeHtml } from "./dom.js";
 import { activerTags } from './event.js';
 
 let dataTotal = [];
@@ -161,8 +161,7 @@ async function resetAffichage() {
   currentIndex = 3;
 
   const cardsList = document.getElementById("cards-list");
-  cardsList.innerHTML = "";
-  data.forEach(evt => cardsList.innerHTML += afficherCards(evt));
+  cardsList.innerHTML = data.map(afficherCards).join("");
 
   // Reset UI
   document.getElementById("voirPlus").style.display = "block";
@@ -182,9 +181,7 @@ function afficherMorceaux() {
   const target = document.getElementById("cards-list");
   const slice = dataTotal.slice(currentIndex, currentIndex + limit);
 
-  slice.forEach(data => {
-    target.innerHTML += afficherCards(data);
-  });
+  target.insertAdjacentHTML("beforeend", slice.map(afficherCards).join(""));
 
   currentIndex += limit;
 
@@ -224,7 +221,7 @@ function rechercherEvenements(query = "") {
   if (filteredData.length === 0) {
     cardsList.innerHTML = `
       <div class="no-results">
-        Aucun événement ne correspond à « ${query} ».
+        Aucun événement ne correspond à « ${escapeHtml(query)} ».
       </div>
     `;
     
@@ -233,9 +230,7 @@ function rechercherEvenements(query = "") {
     return;
   }
   
-  filteredData.forEach(event => {
-    cardsList.innerHTML += afficherCards(event);
-  });
+  cardsList.innerHTML = filteredData.map(afficherCards).join("");
   
 
   activerTags();
@@ -271,11 +266,9 @@ function filtrerParTag(tag) {
   );
 
   if (filtered.length === 0) {
-    conteneur.innerHTML = `<div class="no-results">Aucun événement trouvé pour le tag « ${tag} ».</div>`;
+    conteneur.innerHTML = `<div class="no-results">Aucun événement trouvé pour le tag « ${escapeHtml(tag)} ».</div>`;
   } else {
-    filtered.forEach(data => {
-      conteneur.innerHTML += afficherCards(data);
-    });
+    conteneur.innerHTML = filtered.map(afficherCards).join("");
   }
 
   document.querySelectorAll(".tag").forEach(tagEl => {
