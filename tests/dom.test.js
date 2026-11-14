@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate, urlImage } from "../src/dom.js";
+import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate, urlImage, extraireVideos, urlLecteur } from "../src/dom.js";
 
 const MAINTENANT = new Date("2026-11-14T12:00:00+01:00");
 
@@ -223,5 +223,49 @@ describe("images redimensionnées", () => {
   it("garde l'image d'origine hors production ou pour un autre domaine", () => {
     expect(afficherCards(evenement, MAINTENANT)).not.toContain("_vercel");
     expect(afficherCards({ ...evenement, cover_url: "https://autre.fr/a.jpg" }, MAINTENANT, { optimiserImages: true })).not.toContain("_vercel");
+  });
+});
+
+describe("vidéos intégrées dans les descriptions", () => {
+  const yt = '<p>Teaser</p><iframe width="560" src="https://www.youtube.com/embed/aCrT3sXwpFE?feature=oembed" allowfullscreen></iframe>';
+  const vimeo = '<iframe src="https://player.vimeo.com/video/1136201043?app_id=122963"></iframe>';
+
+  it("extrait les identifiants YouTube et Vimeo", () => {
+    expect(extraireVideos(yt + vimeo)).toEqual([
+      { plateforme: "youtube", id: "aCrT3sXwpFE" },
+      { plateforme: "vimeo", id: "1136201043" },
+    ]);
+  });
+
+  it("ignore les autres sources, les faux domaines et les doublons", () => {
+    const html =
+      '<iframe src="https://evil.example/embed/aCrT3sXwpFE"></iframe>' +
+      '<iframe src="https://www.youtube.com.evil.example/embed/aCrT3sXwpFE"></iframe>' +
+      '<iframe src="javascript:alert(1)"></iframe>' +
+      yt + yt;
+    expect(extraireVideos(html)).toEqual([{ plateforme: "youtube", id: "aCrT3sXwpFE" }]);
+    expect(extraireVideos(null)).toEqual([]);
+  });
+
+  it("reconstruit un lecteur YouTube sans cookie ou Vimeo sans suivi", () => {
+    expect(urlLecteur({ plateforme: "youtube", id: "aCrT3sXwpFE" })).toBe("https://www.youtube-nocookie.com/embed/aCrT3sXwpFE?autoplay=1&rel=0");
+    expect(urlLecteur({ plateforme: "vimeo", id: "1136201043" })).toBe("https://player.vimeo.com/video/1136201043?autoplay=1&dnt=1");
+    expect(urlLecteur({ plateforme: "youtube", id: '"><script>' })).toBe("");
+    expect(urlLecteur({ plateforme: "autre", id: "1" })).toBe("");
+  });
+
+  it("l'encart affiche un bouton de lecture et jamais l'iframe d'origine", () => {
+    const html = afficherFiche({ title: "X", description: yt }, MAINTENANT);
+    expect(html).toContain('data-plateforme="youtube" data-video="aCrT3sXwpFE"');
+    expect(html).not.toContain("<iframe");
+  });
+
+  it("l'image de la carte ouvre aussi l'encart (data-id)", () => {
+    expect(afficherCards({ id: "42", title: "X", cover_url: "https://cdn.paris.fr/a.jpg" }, MAINTENANT)).toContain('<div class="card-visuel" data-id="42">');
+  });
+
+  it("la carte annonce la vidéo", () => {
+    expect(afficherCards({ id: "1", title: "X", description: yt }, MAINTENANT)).toContain("Infos pratiques et vidéo");
+    expect(afficherCards({ id: "1", title: "X", description: "<p>rien</p>" }, MAINTENANT)).toContain(">Infos pratiques</button>");
   });
 });

@@ -38,8 +38,11 @@ On sort ? est une application front-end en JavaScript qui interroge l'API Open D
 | ➕ Pagination | `Voir plus d'événements` charge les 9 suivants depuis l'API |
 | ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
 | 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
+| ▶️ Vidéos | Les 110 vidéos YouTube et Vimeo intégrées dans les descriptions sont reprises dans l'encart : bouton « Lire la vidéo », lecteur chargé seulement au clic (YouTube sans cookie, Vimeo sans suivi) ; la carte affiche « Infos pratiques et vidéo » |
+| 🖱️ Survol | Au survol d'une carte, l'image grossit légèrement dans son cadre et le titre passe en rouge ; un clic sur l'image ouvre l'encart (effet désactivé si « réduire les animations » est activé) |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
 | 🖼️ Images allégées | En production, les images de paris.fr (souvent 500 Ko à 1 Mo) sont redimensionnées et converties en AVIF/WebP par l'API d'images de Vercel (`vercel.json`), avec retour à l'originale en cas d'échec |
+| ⚡ Performance | Lighthouse mobile : accessibilité, bonnes pratiques et SEO à 100 ; hauteur réservée pour éviter que la page saute à l'arrivée des cartes |
 | 🔗 Partage | Icône d'onglet, image d'aperçu (Open Graph, 1200×630), `robots.txt` et `sitemap.xml` |
 | 📍 Infos utiles | Date, prix, adresse, description et contact selon les données disponibles |
 | 📌 Filtres toujours visibles | La barre de filtres reste en haut de l'écran pendant le défilement ; sur mobile elle défile horizontalement |
@@ -100,7 +103,7 @@ adataviz-patphiletas/
 └── tests/
     ├── api.test.js  # Filtres, périodes (week-end, heure d'été…), échappement ODSQL, erreurs HTTP
     ├── filtres.test.js # Lecture/écriture des filtres dans l'URL, résumé du compteur
-    └── dom.test.js  # Échappement/sanitisation, libellés et colonne de date, cartes, encart, messages d'état
+    └── dom.test.js  # Échappement/sanitisation, libellés et colonne de date, cartes, encart, vidéos, images, messages d'état
 ```
 
 ---
@@ -147,7 +150,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (74 tests)
+npx vitest run    # une seule exécution (80 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.

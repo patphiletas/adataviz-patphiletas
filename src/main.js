@@ -4,7 +4,7 @@ import "@fontsource-variable/inter/wght.css";
 import "./style.css";
 
 import { chargerEvenements, TAILLE_PAGE } from "./api.js";
-import { afficherCards, afficherFiche, messageEtat } from "./dom.js";
+import { afficherCards, afficherFiche, messageEtat, urlLecteur } from "./dom.js";
 import { activerTags } from "./event.js";
 import {
   ARRONDISSEMENTS,
@@ -206,8 +206,9 @@ function initialiserPage() {
   document.getElementById("cards-list").addEventListener("click", (event) => {
     if (event.target.id === "reessayer") charger({ reinitialiser: true });
     if (event.target.id === "etat-reinitialiser") resetAffichage();
-    const bouton = event.target.closest(".ouvrir-fiche");
-    if (bouton) ouvrirFiche(bouton.dataset.id);
+    // Le bouton « Infos pratiques » ou, à la souris, l'image de la carte
+    const declencheur = event.target.closest(".ouvrir-fiche, .card-visuel");
+    if (declencheur) ouvrirFiche(declencheur.dataset.id);
   });
 
   // Encart : fermeture par le bouton ✕, par Échap (natif) ou en cliquant à côté
@@ -215,6 +216,12 @@ function initialiserPage() {
   document.getElementById("fiche-fermer").addEventListener("click", () => fiche.close());
   fiche.addEventListener("click", (event) => {
     if (event.target === fiche) fiche.close();
+    const lancer = event.target.closest(".video-lancer");
+    if (lancer) lancerVideo(lancer);
+  });
+  // Fermer l'encart arrête la vidéo (le contenu est vidé)
+  fiche.addEventListener("close", () => {
+    document.getElementById("fiche-contenu").innerHTML = "";
   });
 
   // Image redimensionnée indisponible (quota, erreur) : on revient à l'originale
@@ -253,6 +260,19 @@ function ouvrirFiche(id) {
   document.getElementById("fiche-contenu").innerHTML = afficherFiche(evenement);
   fiche.showModal();
   fiche.scrollTop = 0;
+}
+
+// Remplace le bouton par le lecteur (YouTube sans cookie ou Vimeo « do not track »).
+function lancerVideo(bouton) {
+  const src = urlLecteur({ plateforme: bouton.dataset.plateforme, id: bouton.dataset.video });
+  if (!src) return;
+  const iframe = document.createElement("iframe");
+  iframe.src = src;
+  iframe.title = "Vidéo de l'événement";
+  iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
+  iframe.allowFullscreen = true;
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  bouton.replaceWith(iframe);
 }
 
 // -----------------

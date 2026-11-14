@@ -137,6 +137,56 @@ function lieuEtArrondissement(data) {
 }
 
 // -----------------
+// Vidéos : certaines descriptions intègrent un lecteur YouTube ou Vimeo (<iframe>).
+// sanitizeHtml supprime toujours les <iframe> ; on en extrait seulement
+// l'identifiant de la vidéo, vérifié par une expression stricte, et on
+// reconstruit nous-mêmes le lecteur, chargé au clic (vie privée, performance).
+
+const LECTEURS = [
+  { plateforme: "youtube", motif: /^https:\/\/(?:www\.)?youtube(?:-nocookie)?\.com\/embed\/([A-Za-z0-9_-]{11})(?:[?#]|$)/ },
+  { plateforme: "vimeo", motif: /^https:\/\/player\.vimeo\.com\/video\/(\d{1,12})(?:[?#]|$)/ },
+];
+
+export function extraireVideos(html) {
+  const doc = new DOMParser().parseFromString(`<div>${html ?? ""}</div>`, "text/html");
+  const videos = [];
+  for (const iframe of doc.querySelectorAll("iframe[src]")) {
+    const src = iframe.getAttribute("src").trim();
+    for (const { plateforme, motif } of LECTEURS) {
+      const m = motif.exec(src);
+      if (m && !videos.some((v) => v.id === m[1])) videos.push({ plateforme, id: m[1] });
+    }
+  }
+  return videos;
+}
+
+export function urlLecteur({ plateforme, id }) {
+  if (plateforme === "youtube" && /^[A-Za-z0-9_-]{11}$/.test(id)) {
+    return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+  }
+  if (plateforme === "vimeo" && /^\d{1,12}$/.test(id)) {
+    return `https://player.vimeo.com/video/${id}?autoplay=1&dnt=1`;
+  }
+  return "";
+}
+
+const NOMS_PLATEFORME = { youtube: "YouTube", vimeo: "Vimeo" };
+
+function blocVideos(videos) {
+  return videos
+    .map(
+      ({ plateforme, id }) => `
+      <div class="video">
+        <button type="button" class="video-lancer" data-plateforme="${escapeHtml(plateforme)}" data-video="${escapeHtml(id)}">
+          <span class="video-icone" aria-hidden="true">▶</span>
+          <span>Lire la vidéo <small>· ${NOMS_PLATEFORME[plateforme]}</small></span>
+        </button>
+      </div>`
+    )
+    .join("");
+}
+
+// -----------------
 // Images : celles de paris.fr font souvent 500 Ko à 1 Mo. En production, on les
 // fait redimensionner par l'API d'images de Vercel (vercel.json), en AVIF/WebP.
 // En cas d'échec, main.js remet l'image d'origine (data-original).
@@ -172,14 +222,14 @@ export function afficherCards(data, maintenant = new Date(), { optimiserImages =
         ${col ? `<span>${e(col.haut)}</span><b>${e(col.jour)}</b><span>${e(col.bas)}</span>` : ""}
       </div>
       <div class="card-corps">
-        ${cover ? baliseImage(cover, optimiserImages) : ""}
+        ${cover ? `<div class="card-visuel" data-id="${e(data.id)}">${baliseImage(cover, optimiserImages)}</div>` : ""}
         <h2 title="${e(data.title)}">${e(data.title)}</h2>
         <p class="meta">${lieu ? `<strong>${lieu}</strong><br>` : ""}<span class="date">${e(libelleDate(data, maintenant))}</span></p>
         <div class="badges">
           ${badgePrix(data)}
           ${tags.map((tag) => `<button type="button" class="badge tag" data-tag="${e(tag)}" aria-pressed="false">${e(tag)}</button>`).join("")}
         </div>
-        <button type="button" class="ouvrir-fiche" data-id="${e(data.id)}" aria-haspopup="dialog">Infos pratiques</button>
+        <button type="button" class="ouvrir-fiche" data-id="${e(data.id)}" aria-haspopup="dialog">${extraireVideos(data.description).length ? "Infos pratiques et vidéo" : "Infos pratiques"}</button>
       </div>
     </article>
   `;
@@ -199,6 +249,7 @@ export function afficherFiche(data, maintenant = new Date()) {
     <p class="meta">${lieu ? `<strong>${lieu}</strong> · ` : ""}${e(libelleDate(data, maintenant))}</p>
     <div class="badges">${badgePrix(data)}</div>
     ${data.lead_text ? `<p class="accroche">${e(data.lead_text)}</p>` : ""}
+    ${blocVideos(extraireVideos(data.description))}
     <dl>
       ${data.audience ? `<dt>Public</dt><dd>${e(data.audience)}</dd>` : ""}
       ${data.price_detail ? `<dt>Tarifs</dt><dd>${sanitizeHtml(data.price_detail)}</dd>` : ""}

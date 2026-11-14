@@ -36,6 +36,7 @@ Les données viennent d'une API externe et de la saisie utilisateur : **tout tex
 
 - Texte simple (titre, adresse, prix, tags, audience, saisie de recherche…) → `escapeHtml()` de `src/dom.js`.
 - URL (image de couverture, liens) → `safeUrl()` : seuls `http:` et `https:` passent.
+- Vidéos : `sanitizeHtml()` supprime **toujours** les `<iframe>`. `extraireVideos()` lit seulement l'identifiant (YouTube `embed/` 11 caractères, Vimeo `player.vimeo.com/video/` chiffres) avec une expression stricte ; `urlLecteur()` reconstruit l'URL (youtube-nocookie, Vimeo `dnt=1`) et `main.js` crée l'`<iframe>` au clic. Ne jamais réinsérer l'iframe d'origine ni élargir la liste des hôtes sans test.
 - Champ `description` de l'API (contient du HTML) → `sanitizeHtml()` : liste blanche de balises de mise en forme, attributs supprimés, liens forcés en `target="_blank" rel="noopener noreferrer"`. Ne jamais l'insérer brut.
 - Ne jamais réintroduire de `${variable}` non échappé dans un template HTML, ni d'`innerHTML +=` dans une boucle (construire la chaîne puis l'insérer en une fois).
 
@@ -57,6 +58,7 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Polices auto-hébergées via `@fontsource-variable/fraunces` (titres) et `@fontsource-variable/inter` (texte), importées en tête de `main.js`. Pas de Google Fonts (vie privée).
 - Une carte = `<article class="card">` : colonne de date (`colonneDate()`), image 3:2, titre serif graisse 500 coupé à 3 lignes (`line-clamp`, titre complet en `title`), lieu · arrondissement, libellé de date, badges (prix + tags en `<button>`), bouton « Infos pratiques ».
 - « Infos pratiques » ouvre l'encart `<dialog id="fiche">` (index.html) rempli par `afficherFiche()` depuis `evenementsAffiches` (Map par `id`, dans `main.js`). Ne pas revenir à un dépliage dans la carte : il décalait toute la rangée suivante.
+- Survol : `.card:hover .card-image` (zoom 1.04 dans `.card-visuel` en `overflow: hidden`) et titre rouge, seulement si `@media (hover: hover)`, coupé par `prefers-reduced-motion`. Un clic sur `.card-visuel` (data-id) ouvre l'encart.
 - Peu de filets : pas de filet sous les cartes (séparées par l'espace, `gap` de la grille).
 - Pas de logo « Mairie de Paris » ni d'image de banque d'images (l'ancienne était une « Preview » AdobeStock filigranée, non licenciée) : l'app est indépendante, la source est citée en pied de page.
 - Mobile (< 600 px) : la barre de filtres défile horizontalement ; vérifier qu'aucun élément ne fait déborder la page (`document.documentElement.scrollWidth` = largeur d'écran).
@@ -65,7 +67,7 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 
 - Images : `afficherCards(e, maintenant, { optimiserImages })`. En production (`*.vercel.app`), `src`/`srcset` passent par `/_vercel/image?url=…&w=…&q=70` ; `w` doit être dans `LARGEURS_IMAGE` **et** dans `images.sizes` de `vercel.json` (sinon erreur 400), `q` dans `images.qualities`. `data-original` garde l'image d'origine : `main.js` y revient si l'image optimisée échoue (quota du plan Hobby, erreur). En local (Vite), les images d'origine sont utilisées.
 - Balises Open Graph et icônes dans `index.html`. `og.png` a été généré en HTML (polices Fraunces/Inter) puis capturé avec Chrome headless en 1200×630 ; le refaire si le titre ou le design change.
-- Audit Lighthouse mobile du 2026-11-14 (avant images optimisées) : performance 67, accessibilité 100, bonnes pratiques 96 (cookie tiers de cdn.paris.fr, hors de notre contrôle), SEO 92 (robots.txt manquant, ajouté depuis).
+- Audits Lighthouse mobile du 2026-11-14 : avant → performance 67 (images de 4 Mo), accessibilité 100, bonnes pratiques 96, SEO 92. Après images optimisées (236 Ko par page), robots.txt et sitemap → performance 72, accessibilité 100, bonnes pratiques 100, SEO 100 ; le reste de la note perf venait d'un décalage de mise en page (CLS 0,70) quand les cartes arrivent, corrigé en réservant la hauteur de `main` (`min-height: 100vh`) et du compteur (1 ligne, 2 sur mobile). Ne pas retirer ces réserves.
 
 ## Conventions
 

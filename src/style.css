@@ -274,6 +274,8 @@ main {
   max-width: var(--largeur);
   margin: 0 auto;
   padding: 0 24px 72px;
+  /* Réserve la hauteur de la liste : le pied de page ne saute pas quand les cartes arrivent (CLS) */
+  min-height: 100vh;
 }
 
 main:focus {
@@ -283,7 +285,7 @@ main:focus {
 .compteur {
   margin: 0;
   padding: 18px 0 4px;
-  min-height: 1.5em;
+  min-height: calc(1.5em + 22px); /* une ligne réservée même vide (CLS) */
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -335,16 +337,35 @@ main:focus {
   gap: 10px;
 }
 
+/* Image : cadre fixe, léger zoom au survol de la carte ; un clic ouvre l'encart */
+.card-visuel {
+  overflow: hidden;
+  background: var(--papier-fonce);
+  cursor: pointer;
+}
+
 .card-image {
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
-  background: var(--papier-fonce);
   display: block;
+  transition: transform 0.5s ease, filter 0.5s ease;
+}
+
+@media (hover: hover) {
+  .card:hover .card-image {
+    transform: scale(1.04);
+    filter: saturate(1.1) contrast(1.03);
+  }
+
+  .card:hover h2 {
+    color: var(--rouge);
+  }
 }
 
 /* Titres : graisse moyenne, 3 lignes au plus (titre complet dans l'encart) */
 .card h2 {
+  transition: color 0.3s ease;
   font-family: var(--serif);
   font-size: 21px;
   font-weight: 500;
@@ -505,6 +526,54 @@ button.badge:hover {
   margin: 16px 0;
 }
 
+/* Vidéo : bouton puis lecteur, au format 16:9 */
+.video {
+  margin: 0 0 18px;
+  aspect-ratio: 16 / 9;
+  background: var(--encre);
+}
+
+.video-lancer,
+.video iframe {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-lancer {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--encre);
+  color: var(--papier);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.video-lancer small {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.video-icone {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1.5px solid var(--papier);
+  font-size: 22px;
+  padding-left: 4px;
+}
+
+.video-lancer:hover .video-icone {
+  background: var(--rouge);
+  border-color: var(--rouge);
+}
+
 .fiche dl {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -660,6 +729,11 @@ button.badge:hover {
     grid-template-columns: 1fr;
   }
 
+  /* Le compteur peut tenir sur deux lignes : on les réserve (CLS) */
+  .compteur {
+    min-height: calc(2 * 1.5em + 22px);
+  }
+
   main,
   .entete,
   .pied {
@@ -696,5 +770,13 @@ button.badge:hover {
   .spinner,
   .fiche[open] {
     animation: none;
+  }
+
+  .card-image {
+    transition: none;
+  }
+
+  .card:hover .card-image {
+    transform: none;
   }
 }
