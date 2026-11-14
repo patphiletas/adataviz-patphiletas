@@ -9,7 +9,13 @@ describe("lireFiltres", () => {
       quand: "weekend",
       gratuit: true,
       arrondissement: "11",
+      vue: "",
     });
+  });
+
+  it("lit la vue carte, ignore une vue inconnue", () => {
+    expect(lireFiltres("?vue=carte").vue).toBe("carte");
+    expect(lireFiltres("?vue=satellite").vue).toBe("");
   });
 
   it("renvoie des filtres vides sans paramètres", () => {
@@ -35,7 +41,7 @@ describe("ecrireFiltres", () => {
   });
 
   it("aller-retour URL → filtres → URL", () => {
-    const url = "?q=jazz&tag=Concert&quand=semaine&gratuit=1&arr=16";
+    const url = "?q=jazz&tag=Concert&quand=semaine&gratuit=1&arr=16&vue=carte";
     expect(ecrireFiltres(lireFiltres(url))).toBe(url);
   });
 });
@@ -44,6 +50,7 @@ describe("aDesFiltres", () => {
   it("détecte la présence d'un filtre", () => {
     expect(aDesFiltres(filtresVides())).toBe(false);
     expect(aDesFiltres({ ...filtresVides(), arrondissement: "3" })).toBe(true);
+    expect(aDesFiltres({ ...filtresVides(), vue: "carte" })).toBe(false);
   });
 });
 

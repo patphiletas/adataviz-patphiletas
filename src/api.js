@@ -146,3 +146,46 @@ export async function chargerEvenements(options = {}, { signal, fetchFn = fetch 
     total: Number(data.total_count) || 0,
   };
 }
+
+// ---------------------------------------------------------------
+// Vue carte : tous les événements correspondant aux filtres, en une requête
+// sur le point d'export (pas de limite de 100), avec seulement les champs
+// utiles aux marqueurs (~150 Ko compressés pour 3 000 événements).
+
+export const EXPORT_URL =
+  "https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/que-faire-a-paris-/exports/json";
+
+const CHAMPS_CARTE = "id,title,lat_lon,price_type,address_name";
+
+export function construireUrlCarte(filtres = {}, maintenant = new Date()) {
+  const params = new URLSearchParams({
+    select: CHAMPS_CARTE,
+    where: construireFiltre(filtres, maintenant),
+    order_by: "date_end",
+  });
+  return `${EXPORT_URL}?${params}`;
+}
+
+// Garde les événements localisés (quelques-uns n'ont pas de coordonnées).
+export function pointsValides(enregistrements) {
+  return (Array.isArray(enregistrements) ? enregistrements : []).filter(
+    (e) => Number.isFinite(e?.lat_lon?.lat) && Number.isFinite(e?.lat_lon?.lon)
+  );
+}
+
+export async function chargerPointsCarte(filtres = {}, { signal, fetchFn = fetch } = {}) {
+  const reponse = await fetchFn(construireUrlCarte(filtres), { signal });
+  if (!reponse.ok) throw new Error(`API Open Data Paris : HTTP ${reponse.status}`);
+  const tous = await reponse.json();
+  const points = pointsValides(tous);
+  return { points, sansAdresse: (Array.isArray(tous) ? tous.length : 0) - points.length };
+}
+
+// Fiche complète d'un événement (pour l'encart ouvert depuis un marqueur).
+export async function chargerEvenement(id, { fetchFn = fetch } = {}) {
+  const params = new URLSearchParams({ where: `id="${echapperOdsql(id)}"`, limit: "1" });
+  const reponse = await fetchFn(`${API_URL}?${params}`);
+  if (!reponse.ok) throw new Error(`API Open Data Paris : HTTP ${reponse.status}`);
+  const data = await reponse.json();
+  return data.results?.[0] ?? null;
+}

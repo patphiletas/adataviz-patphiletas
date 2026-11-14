@@ -17,7 +17,7 @@ export function libelleArrondissement(arr) {
 }
 
 export function filtresVides() {
-  return { recherche: "", tag: "", quand: "", gratuit: false, arrondissement: "" };
+  return { recherche: "", tag: "", quand: "", gratuit: false, arrondissement: "", vue: "" };
 }
 
 // Lit l'URL ; toute valeur inconnue est ignorée (lien modifié à la main).
@@ -31,6 +31,7 @@ export function lireFiltres(search) {
     quand: PERIODES.includes(quand) ? quand : "",
     gratuit: params.get("gratuit") === "1",
     arrondissement: ARRONDISSEMENTS.includes(arr) ? arr : "",
+    vue: params.get("vue") === "carte" ? "carte" : "",
   };
 }
 
@@ -42,12 +43,14 @@ export function ecrireFiltres(filtres) {
   if (filtres.quand) params.set("quand", filtres.quand);
   if (filtres.gratuit) params.set("gratuit", "1");
   if (filtres.arrondissement) params.set("arr", filtres.arrondissement);
+  if (filtres.vue === "carte") params.set("vue", "carte");
   const texte = params.toString();
   return texte ? `?${texte}` : "";
 }
 
+// La vue (liste ou carte) n'est pas un filtre : elle ne compte pas ici.
 export function aDesFiltres(filtres) {
-  return ecrireFiltres(filtres) !== "";
+  return ecrireFiltres({ ...filtres, vue: "" }) !== "";
 }
 
 // Texte du compteur, ex. « 128 événements · ce week-end · gratuits · 11e ».

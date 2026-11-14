@@ -16,6 +16,7 @@ Application front-end en **JavaScript vanilla + Vite** qui affiche les événeme
 index.html          # Page unique : en-tête, recherche, conteneurs (filtres, liste), pied de page
 src/
   api.js            # Requêtes ODSQL (construireFiltre, construireUrl), periode(), codesPostaux(), chargerEvenements
+  carte.js          # Vue carte : Leaflet + markercluster (import() à la demande), fond OSM
   theme.js          # Mode nuit (themeInitial, appliquerTheme, activerBoutonTheme)
   filtres.js        # Filtres ↔ URL (lireFiltres, ecrireFiltres), libellés, resumeFiltres
   main.js           # Imports polices/CSS, état de la liste, recherche (debounce), filtres, tags, pagination, états
@@ -64,6 +65,14 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Peu de filets : pas de filet sous les cartes (séparées par l'espace, `gap` de la grille).
 - Pas de logo « Mairie de Paris » ni d'image de banque d'images (l'ancienne était une « Preview » AdobeStock filigranée, non licenciée) : l'app est indépendante, la source est citée en pied de page.
 - Mobile (< 600 px) : la barre de filtres défile horizontalement ; vérifier qu'aucun élément ne fait déborder la page (`document.documentElement.scrollWidth` = largeur d'écran).
+
+## Vue carte (ajoutée le 2026-11-14)
+
+- `etat.filtres.vue` = `""` (liste) ou `"carte"` ; dans l'URL `vue=carte`. Ce n'est pas un filtre : `aDesFiltres` l'ignore et « Tout effacer » garde la vue.
+- Données : `chargerPointsCarte()` (point d'export, mêmes filtres, peu de champs, `pointsValides()` écarte les événements sans coordonnées, comptés à part) ; `chargerEvenement(id)` pour l'encart ouvert depuis un marqueur.
+- `src/carte.js` est importé dynamiquement (chunk séparé, ~45 Ko gzip) ; `leaflet.markercluster` attend `window.L`, d'où son `import()` après `window.L = L`. `creerCarte()` est idempotent.
+- Fond de plan : **OpenStreetMap** (`tile.openstreetmap.org`, attribution obligatoire, usage modéré). CARTO a été essayé : ses tuiles affichent désormais « API KEY REQUIRED ». L'aspect sobre et le mode nuit sont un `filter` CSS sur `.leaflet-tile-pane` (pas de second fond de plan).
+- Cadrage : Paris (zoom 12) par défaut ; recadrage sur les points seulement si un arrondissement est filtré ou s'il y a ≤ 30 résultats (quelques événements hors Paris éloigneraient la vue).
 
 ## Performance et partage
 

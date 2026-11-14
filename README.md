@@ -39,6 +39,7 @@ On sort ? est une application front-end en JavaScript qui interroge l'API Open D
 | ⏱️ États | Messages de chargement, d'erreur (avec bouton `Réessayer`) et d'absence de résultat |
 | 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
 | ▶️ Vidéos | Les 110 vidéos YouTube et Vimeo intégrées dans les descriptions sont reprises dans l'encart : bouton « Lire la vidéo », lecteur chargé seulement au clic (YouTube sans cookie, Vimeo sans suivi) ; la carte affiche « Infos pratiques et vidéo » |
+| 🗺️ Vue carte | Bouton « Liste / Carte » ; tous les événements filtrés sur un plan OpenStreetMap (Leaflet), regroupés quand ils sont proches ; rouge = gratuit, bleu = payant ; un clic sur un point ouvre l'encart ; vue gardée dans l'URL (`vue=carte`) ; Leaflet chargé seulement en vue carte |
 | 🌙 Mode nuit | Bouton soleil / lune en haut à droite ; suit d'abord le réglage de l'appareil, puis retient le choix (localStorage) ; appliqué avant l'affichage, sans flash clair |
 | 🖱️ Survol | Au survol d'une carte, l'image grossit légèrement dans son cadre et le titre passe en rouge ; un clic sur l'image ouvre l'encart (effet désactivé si « réduire les animations » est activé) |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
@@ -81,6 +82,7 @@ L'app est indépendante : pas de logo de la Ville ni d'image de banque d'images 
 | Polices | Fraunces + Inter (`@fontsource-variable`) |
 | Build tool | Vite |
 | Données | API Open Data Paris (requêtes ODSQL) |
+| Carte | Leaflet + leaflet.markercluster, fond OpenStreetMap |
 | Tests | Vitest + jsdom |
 | Déploiement | Vercel |
 
@@ -96,6 +98,7 @@ adataviz-patphiletas/
 ├── public/          # favicon.svg, apple-touch-icon.png, og.png, robots.txt, sitemap.xml
 ├── src/
 │   ├── api.js       # Requêtes ODSQL, périodes à l'heure de Paris, codes postaux, appel à l'API
+│   ├── carte.js     # Vue carte : Leaflet + regroupement, chargé à la demande
 │   ├── theme.js     # Mode nuit : thème initial, bouton soleil / lune
 │   ├── filtres.js   # Filtres ↔ URL, libellés, résumé du compteur
 │   ├── main.js      # État de la liste, recherche, filtres, tags, pagination, états, en-tête
@@ -123,6 +126,8 @@ L'application consomme directement l'endpoint côté client, sans backend interm
 | `where` | `date_end >= now()` + `search("…")` pour la recherche + `search(qfap_tags, "…")` pour le tag + `date_start <= date'fin' AND date_end >= date'début'` pour la période + `price_type in ("gratuit", "gratuit sous condition")` + `address_zipcode in ("750XX")` |
 | `order_by` | `date_end` (ce qui se termine le plus tôt d'abord) |
 | `limit` / `offset` | 9 événements par page |
+
+En vue carte, l'app interroge le point d'**export** (`/exports/json`, sans limite de 100) avec les mêmes filtres et seulement `id,title,lat_lon,price_type,address_name` (~150 Ko compressés pour 3 000 événements). La fiche complète d'un point est chargée au clic (`where=id="…"`).
 
 Les textes saisis sont échappés (`\` et `"`) avant d'être placés dans la requête. Une nouvelle recherche annule la requête précédente (`AbortController`) pour qu'une réponse lente n'écrase pas un résultat plus récent. L'API autorise 10 000 appels par jour et par adresse IP.
 
@@ -152,7 +157,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (82 tests)
+npx vitest run    # une seule exécution (88 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.
@@ -178,7 +183,7 @@ npm run preview
 - [x] Refonte visuelle (direction éditoriale)
 - [x] Favicon, image de partage, robots.txt, sitemap
 - [x] Images redimensionnées (performance)
-- [ ] Vue carte des événements
+- [x] Vue carte des événements
 - [ ] Ajouter une carte géographique des événements
 - [ ] Permettre le tri par thématique ou par arrondissement
 - [ ] Améliorer encore l'accessibilité et la hiérarchie visuelle

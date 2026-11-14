@@ -6,6 +6,11 @@ import {
   chargerEvenements,
   periode,
   codesPostaux,
+  construireUrlCarte,
+  pointsValides,
+  chargerPointsCarte,
+  chargerEvenement,
+  EXPORT_URL,
   API_URL,
   TAILLE_PAGE,
 } from "../src/api.js";
@@ -194,5 +199,46 @@ describe("construireFiltre avec les filtres du lot 2", () => {
     );
     expect(filtre.split(" AND ")).toHaveLength(7);
     expect(filtre).toContain('address_zipcode in ("75011")');
+  });
+});
+
+describe("vue carte", () => {
+  it("interroge le point d'export avec les filtres et peu de champs", () => {
+    const url = new URL(construireUrlCarte({ gratuit: true, vue: "carte" }));
+    expect(`${url.origin}${url.pathname}`).toBe(EXPORT_URL);
+    expect(url.searchParams.get("select")).toBe("id,title,lat_lon,price_type,address_name");
+    expect(url.searchParams.get("where")).toBe('date_end >= now() AND price_type in ("gratuit", "gratuit sous condition")');
+  });
+
+  it("garde seulement les événements localisés", () => {
+    const pts = pointsValides([
+      { id: "1", lat_lon: { lat: 48.85, lon: 2.35 } },
+      { id: "2", lat_lon: null },
+      { id: "3" },
+      { id: "4", lat_lon: { lat: "x", lon: 2 } },
+    ]);
+    expect(pts.map((p) => p.id)).toEqual(["1"]);
+    expect(pointsValides(null)).toEqual([]);
+  });
+
+  it("compte les événements sans adresse", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [{ id: "1", lat_lon: { lat: 48.8, lon: 2.3 } }, { id: "2", lat_lon: null }],
+    });
+    const res = await chargerPointsCarte({}, { fetchFn });
+    expect(res.points).toHaveLength(1);
+    expect(res.sansAdresse).toBe(1);
+  });
+
+  it("charge la fiche complète d'un événement, identifiant échappé", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [{ id: "42", title: "X" }] }) });
+    expect(await chargerEvenement('42"', { fetchFn })).toEqual({ id: "42", title: "X" });
+    expect(new URL(fetchFn.mock.calls[0][0]).searchParams.get("where")).toBe('id="42\\""');
+  });
+
+  it("lève une erreur si l'export échoue", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    await expect(chargerPointsCarte({}, { fetchFn })).rejects.toThrow("HTTP 500");
   });
 });

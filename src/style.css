@@ -823,3 +823,115 @@ button.badge:hover {
     transform: none;
   }
 }
+
+/* ---------- Vue carte ---------- */
+
+.vues {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+}
+
+.vues .pastille {
+  border-radius: 0;
+}
+
+.vues .pastille:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.vues .pastille:last-child {
+  border-radius: 0 999px 999px 0;
+  border-left: 0;
+}
+
+.carte {
+  height: min(72vh, 680px);
+  margin-top: 12px;
+  border: 1px solid var(--filet);
+  background: var(--papier-fonce);
+  z-index: 0;
+}
+
+.carte .leaflet-container,
+.carte.leaflet-container {
+  font-family: var(--sans);
+  background: var(--papier-fonce);
+}
+
+/* Fond de plan OSM rendu sobre : gris chaud en jour, inversé en nuit */
+.carte .leaflet-tile-pane {
+  filter: grayscale(1) sepia(0.18) contrast(0.92) brightness(1.04);
+}
+
+:root[data-theme="dark"] .carte .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) grayscale(1) sepia(0.12) brightness(0.85) contrast(0.9);
+}
+
+.point {
+  border-radius: 50%;
+  border: 2px solid var(--papier);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.point-gratuit {
+  background: var(--rouge);
+}
+
+.point-payant {
+  background: var(--bleu);
+}
+
+.grappe {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--encre);
+  color: var(--papier);
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--encre) 20%, transparent);
+}
+
+.carte .leaflet-tooltip {
+  font-family: var(--sans);
+  font-size: 13px;
+  border-radius: 0;
+  border: 1px solid var(--encre);
+  background: var(--blanc);
+  color: var(--encre);
+  box-shadow: none;
+}
+
+.carte .leaflet-tooltip-top::before {
+  border-top-color: var(--encre);
+}
+
+.carte .leaflet-bar a {
+  background: var(--blanc);
+  color: var(--encre);
+  border-color: var(--filet);
+}
+
+.carte .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--papier) 85%, transparent);
+  color: var(--gris);
+}
+
+.carte .leaflet-control-attribution a {
+  color: var(--encre);
+}
+
+@media (max-width: 600px) {
+  .vues {
+    margin-left: 0;
+  }
+
+  .carte {
+    height: 64vh;
+    margin-left: -16px;
+    margin-right: -16px;
+    border-left: 0;
+    border-right: 0;
+  }
+}

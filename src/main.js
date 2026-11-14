@@ -3,7 +3,7 @@ import "@fontsource-variable/fraunces/wght-italic.css";
 import "@fontsource-variable/inter/wght.css";
 import "./style.css";
 
-import { chargerEvenements, TAILLE_PAGE } from "./api.js";
+import { chargerEvenement, chargerEvenements, chargerPointsCarte, TAILLE_PAGE } from "./api.js";
 import { afficherCards, afficherFiche, messageEtat, urlLecteur } from "./dom.js";
 import { activerTags } from "./event.js";
 import { activerBoutonTheme } from "./theme.js";
@@ -35,6 +35,7 @@ const etat = {
 // pas écraser le résultat d'une recherche plus récente.
 let controleur = null;
 let minuterieRecherche = null;
+let moduleCarte = null; // import("./carte.js"), fait une seule fois
 
 // Événements affichés, par identifiant, pour remplir l'encart « Infos pratiques ».
 const evenementsAffiches = new Map();
@@ -57,6 +58,15 @@ async function charger({ reinitialiser }) {
   controleur?.abort();
   controleur = new AbortController();
   const { signal } = controleur;
+
+  const enCarte = etat.filtres.vue === "carte";
+  document.getElementById("carte").hidden = !enCarte;
+  liste.hidden = enCarte;
+  if (enCarte) {
+    voirPlus.hidden = true;
+    mettreAJourUrl();
+    return chargerCarte(signal);
+  }
 
   if (reinitialiser) {
     etat.offset = 0;
@@ -158,6 +168,10 @@ function initialiserPage() {
       </select>
     </label>
     <button type="button" id="reset-filters" class="lien-reset">Tout effacer</button>
+    <div class="vues" role="group" aria-label="Affichage">
+      <button type="button" class="pastille choix-vue" data-vue="" aria-pressed="true">Liste</button>
+      <button type="button" class="pastille choix-vue" data-vue="carte" aria-pressed="false">Carte</button>
+    </div>
   `;
 
   // Recherche : à la frappe (après 300 ms) ou tout de suite avec Entrée / « Chercher »
@@ -183,6 +197,13 @@ function initialiserPage() {
 
   // Filtres « quand ? », gratuit, arrondissement, tout effacer
   document.getElementById("filtres").addEventListener("click", (event) => {
+    const choixVue = event.target.closest(".choix-vue");
+    if (choixVue && choixVue.dataset.vue !== etat.filtres.vue) {
+      etat.filtres.vue = choixVue.dataset.vue;
+      synchroniserControles();
+      charger({ reinitialiser: true });
+      return;
+    }
     const bouton = event.target.closest(".filtre-quand");
     if (!bouton) return;
     etat.filtres.quand = bouton.dataset.quand;
@@ -254,10 +275,53 @@ function initialiserPage() {
   );
 }
 
+// -----------------------
+// Vue carte : Leaflet est chargé à la première utilisation seulement (moduleCarte).
+
+async function chargerCarte(signal) {
+  const compteur = document.getElementById("compteur");
+  const liste = document.getElementById("cards-list");
+  compteur.textContent = "Chargement de la carte…";
+  try {
+    moduleCarte ??= import("./carte.js");
+    const { creerCarte, afficherPoints, rafraichirTaille } = await moduleCarte;
+    await creerCarte(document.getElementById("carte"), { onOuvrir: ouvrirFiche });
+    rafraichirTaille();
+    const { points, sansAdresse } = await chargerPointsCarte(etat.filtres, { signal });
+    afficherPoints(points, { recadrer: Boolean(etat.filtres.arrondissement) || points.length <= 30 });
+    const absents = sansAdresse ? ` · ${sansAdresse} sans adresse, visibles en liste` : "";
+    compteur.textContent = points.length
+      ? `${resumeFiltres(etat.filtres, points.length)} sur la carte${absents}`
+      : "";
+    if (!points.length) {
+      liste.hidden = false;
+      liste.innerHTML = messageEtat("vide", messageAucunResultat(), { reinitialiser: true });
+    }
+  } catch (erreur) {
+    if (erreur.name === "AbortError") return;
+    console.error(erreur);
+    compteur.textContent = "";
+    document.getElementById("carte").hidden = true;
+    liste.hidden = false;
+    liste.innerHTML = messageEtat("erreur", "Impossible de charger la carte. Vérifiez votre connexion puis réessayez.", {
+      reessayer: true,
+    });
+  }
+}
+
 // L'élément <dialog> gère le piège du focus, Échap et le retour du focus sur le bouton.
-function ouvrirFiche(id) {
-  const evenement = evenementsAffiches.get(String(id));
-  if (!evenement) return;
+// Depuis la carte, l'événement n'est pas encore chargé en entier : on va le chercher.
+async function ouvrirFiche(id) {
+  let evenement = evenementsAffiches.get(String(id));
+  if (!evenement) {
+    try {
+      evenement = await chargerEvenement(id);
+    } catch (erreur) {
+      console.error(erreur);
+    }
+    if (!evenement) return;
+    evenementsAffiches.set(String(id), evenement);
+  }
   const fiche = document.getElementById("fiche");
   document.getElementById("fiche-contenu").innerHTML = afficherFiche(evenement);
   fiche.showModal();
@@ -324,11 +388,14 @@ function synchroniserControles() {
   liste.value = arrondissement;
   liste.classList.toggle("active", Boolean(arrondissement));
   document.getElementById("reset-filters").hidden = !aDesFiltres(etat.filtres);
+  document.querySelectorAll(".choix-vue").forEach((bouton) => {
+    bouton.setAttribute("aria-pressed", String(bouton.dataset.vue === etat.filtres.vue));
+  });
 }
 
 function resetAffichage() {
   clearTimeout(minuterieRecherche);
-  etat.filtres = filtresVides();
+  etat.filtres = { ...filtresVides(), vue: etat.filtres.vue }; // on garde la vue liste/carte
   synchroniserControles();
   charger({ reinitialiser: true });
 }
