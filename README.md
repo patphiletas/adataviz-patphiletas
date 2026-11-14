@@ -58,7 +58,7 @@ L'app s'appelait « Que faire à Paris ? », comme le jeu de données… et comm
 
 ## Design
 
-Direction **éditoriale**, façon agenda de magazine culturel : papier crème, encre, rouge d'accent, colonne de date (jour de la semaine, numéro, mois) à gauche de chaque événement. Peu de filets : un filet fin sous l'en-tête, un filet clair au-dessus du pied ; les cartes sont séparées par l'espace. Titres en graisse moyenne, coupés à 3 lignes (titre complet dans l'encart et en infobulle).
+Direction **éditoriale**, façon agenda de magazine culturel : papier crème, encre, rouge d'accent, colonne de date (jour de la semaine, numéro, mois) à gauche de chaque événement. Peu de filets : aucun sous l'en-tête, un filet clair sous la barre de filtres et au-dessus du pied ; les cartes sont séparées par l'espace. Titres en graisse moyenne, coupés à 3 lignes (titre complet dans l'encart et en infobulle).
 
 | Élément | Choix |
 |---|---|

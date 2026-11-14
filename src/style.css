@@ -95,7 +95,6 @@ select {
   max-width: var(--largeur);
   margin: 0 auto;
   padding: 56px 24px 28px;
-  border-bottom: 1px solid var(--encre);
 }
 
 .surtitre {
