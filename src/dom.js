@@ -132,6 +132,16 @@ function badgePrix(data) {
   return `<span class="badge ${classe}">${escapeHtml(tarif.texte)}</span>`;
 }
 
+// Lien « Voir sur la carte » : seulement si l'événement a des coordonnées.
+export function aDesCoordonnees(data) {
+  return Number.isFinite(data?.lat_lon?.lat) && Number.isFinite(data?.lat_lon?.lon);
+}
+
+function boutonCarte(data) {
+  if (!aDesCoordonnees(data)) return "";
+  return `<button type="button" class="voir-carte" data-id="${escapeHtml(data.id)}">Voir sur la carte</button>`;
+}
+
 function lieuEtArrondissement(data) {
   return [data.address_name, arrondissement(data.address_zipcode)].filter(Boolean).map(escapeHtml).join(" · ");
 }
@@ -229,7 +239,10 @@ export function afficherCards(data, maintenant = new Date(), { optimiserImages =
           ${badgePrix(data)}
           ${tags.map((tag) => `<button type="button" class="badge tag" data-tag="${e(tag)}" aria-pressed="false">${e(tag)}</button>`).join("")}
         </div>
-        <button type="button" class="ouvrir-fiche" data-id="${e(data.id)}" aria-haspopup="dialog">${extraireVideos(data.description).length ? "Infos pratiques et vidéo" : "Infos pratiques"}</button>
+<div class="actions-carte">
+          <button type="button" class="ouvrir-fiche" data-id="${e(data.id)}" aria-haspopup="dialog">${extraireVideos(data.description).length ? "Infos pratiques et vidéo" : "Infos pratiques"}</button>
+          ${boutonCarte(data)}
+        </div>
       </div>
     </article>
   `;
@@ -256,7 +269,10 @@ export function afficherFiche(data, maintenant = new Date()) {
       ${adresse ? `<dt>Adresse</dt><dd>${adresse}</dd>` : ""}
     </dl>
     <div class="description">${sanitizeHtml(data.description)}</div>
-    ${lien ? `<p class="fiche-lien"><a href="${e(lien)}" target="_blank" rel="noopener noreferrer">Voir la fiche complète sur paris.fr ↗</a></p>` : ""}
+    <p class="fiche-lien">
+      ${lien ? `<a href="${e(lien)}" target="_blank" rel="noopener noreferrer">Voir la fiche complète sur paris.fr ↗</a>` : ""}
+      ${boutonCarte(data)}
+    </p>
   `;
 }
 

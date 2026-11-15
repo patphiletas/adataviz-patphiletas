@@ -17,7 +17,7 @@ export function libelleArrondissement(arr) {
 }
 
 export function filtresVides() {
-  return { recherche: "", tag: "", quand: "", gratuit: false, arrondissement: "", vue: "" };
+  return { recherche: "", tag: "", quand: "", gratuit: false, arrondissement: "", vue: "", evenement: "" };
 }
 
 // Lit l'URL ; toute valeur inconnue est ignorée (lien modifié à la main).
@@ -32,6 +32,8 @@ export function lireFiltres(search) {
     gratuit: params.get("gratuit") === "1",
     arrondissement: ARRONDISSEMENTS.includes(arr) ? arr : "",
     vue: params.get("vue") === "carte" ? "carte" : "",
+    // Événement à centrer sur la carte (identifiant numérique de l'API)
+    evenement: params.get("vue") === "carte" && /^\d{1,12}$/.test(params.get("evenement") ?? "") ? params.get("evenement") : "",
   };
 }
 
@@ -44,13 +46,14 @@ export function ecrireFiltres(filtres) {
   if (filtres.gratuit) params.set("gratuit", "1");
   if (filtres.arrondissement) params.set("arr", filtres.arrondissement);
   if (filtres.vue === "carte") params.set("vue", "carte");
+  if (filtres.vue === "carte" && filtres.evenement) params.set("evenement", filtres.evenement);
   const texte = params.toString();
   return texte ? `?${texte}` : "";
 }
 
-// La vue (liste ou carte) n'est pas un filtre : elle ne compte pas ici.
+// La vue (liste ou carte) et l'événement centré ne sont pas des filtres : ils ne comptent pas ici.
 export function aDesFiltres(filtres) {
-  return ecrireFiltres({ ...filtres, vue: "" }) !== "";
+  return ecrireFiltres({ ...filtres, vue: "", evenement: "" }) !== "";
 }
 
 // Texte du compteur, ex. « 128 événements · ce week-end · gratuits · 11e ».

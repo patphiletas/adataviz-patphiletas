@@ -10,7 +10,20 @@ describe("lireFiltres", () => {
       gratuit: true,
       arrondissement: "11",
       vue: "",
+      evenement: "",
     });
+  });
+
+  it("lit l'événement à centrer, seulement en vue carte et s'il est numérique", () => {
+    expect(lireFiltres("?vue=carte&evenement=125022").evenement).toBe("125022");
+    expect(lireFiltres("?evenement=125022").evenement).toBe("");
+    expect(lireFiltres("?vue=carte&evenement=<script>").evenement).toBe("");
+  });
+
+  it("n'écrit l'événement qu'en vue carte et ne le compte pas comme un filtre", () => {
+    expect(ecrireFiltres({ ...filtresVides(), vue: "carte", evenement: "42" })).toBe("?vue=carte&evenement=42");
+    expect(ecrireFiltres({ ...filtresVides(), evenement: "42" })).toBe("");
+    expect(aDesFiltres({ ...filtresVides(), vue: "carte", evenement: "42" })).toBe(false);
   });
 
   it("lit la vue carte, ignore une vue inconnue", () => {

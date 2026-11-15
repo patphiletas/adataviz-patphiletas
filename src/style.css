@@ -475,7 +475,15 @@ button.badge:hover {
 
 /* Bouton « Infos pratiques » et encart (<dialog>) */
 
-.ouvrir-fiche {
+.actions-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  align-items: baseline;
+}
+
+.ouvrir-fiche,
+.voir-carte {
   align-self: flex-start;
   border: 0;
   background: none;
@@ -488,7 +496,24 @@ button.badge:hover {
   cursor: pointer;
 }
 
-.ouvrir-fiche:hover {
+.voir-carte {
+  font-weight: 500;
+  color: var(--gris);
+}
+
+.voir-carte::before {
+  content: "⌖ ";
+}
+
+.fiche-lien {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  align-items: baseline;
+}
+
+.ouvrir-fiche:hover,
+.voir-carte:hover {
   color: var(--rouge);
   text-decoration-color: currentColor;
 }
@@ -880,6 +905,13 @@ button.badge:hover {
 
 .point-payant {
   background: var(--bleu);
+}
+
+/* Événement visé par « Voir sur la carte » */
+.point-actif {
+  outline: 3px solid var(--encre);
+  outline-offset: 2px;
+  z-index: 1000 !important;
 }
 
 .grappe {

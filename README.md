@@ -40,6 +40,7 @@ On sort ? est une application front-end en JavaScript qui interroge l'API Open D
 | 📄 Infos pratiques | Encart (`<dialog>` natif) avec le titre complet, public, tarifs, adresse, description et lien vers paris.fr ; fermeture par ✕, Échap ou clic à côté ; sur mobile, feuille depuis le bas de l'écran |
 | ▶️ Vidéos | Les 110 vidéos YouTube et Vimeo intégrées dans les descriptions sont reprises dans l'encart : bouton « Lire la vidéo », lecteur chargé seulement au clic (YouTube sans cookie, Vimeo sans suivi) ; la carte affiche « Infos pratiques et vidéo » |
 | 🗺️ Vue carte | Bouton « Liste / Carte » ; tous les événements filtrés sur un plan OpenStreetMap (Leaflet), regroupés quand ils sont proches ; rouge = gratuit, bleu = payant ; un clic sur un point ouvre l'encart ; vue gardée dans l'URL (`vue=carte`) ; Leaflet chargé seulement en vue carte |
+| ⌖ Voir sur la carte | Lien sur chaque événement localisé (carte et encart) : bascule en vue carte, centrée et zoomée au niveau de la rue, point mis en valeur avec son nom (le regroupement s'ouvre en éventail si plusieurs événements sont au même endroit). Adresse partageable `?vue=carte&evenement=<id>` ; le bouton « retour » ramène à la liste |
 | 🌙 Mode nuit | Bouton soleil / lune en haut à droite ; suit d'abord le réglage de l'appareil, puis retient le choix (localStorage) ; appliqué avant l'affichage, sans flash clair |
 | 🖱️ Survol | Au survol d'une carte, l'image grossit légèrement dans son cadre et le titre passe en rouge ; un clic sur l'image ouvre l'encart (effet désactivé si « réduire les animations » est activé) |
 | 💶 Prix en couleur | « Gratuit » en rouge, « Payant » en bleu |
@@ -157,7 +158,7 @@ Application disponible ensuite sur l'URL fournie par Vite, généralement :
 
 ```bash
 npm test          # Vitest en mode watch
-npx vitest run    # une seule exécution (88 tests)
+npx vitest run    # une seule exécution (92 tests)
 ```
 
 Les tests ne font aucun appel réseau : `fetch` est remplacé par une fonction factice.

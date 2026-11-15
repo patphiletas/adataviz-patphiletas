@@ -15,6 +15,7 @@ const ATTRIBUTION =
 const TUILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 let carte = null;
+const marqueursParId = new Map(); // pour centrer la carte sur un événement
 let groupe = null;
 
 const echapper = (v) =>
@@ -72,6 +73,7 @@ async function construire(element, { onOuvrir }) {
 // ils sont peu nombreux ou filtrés par arrondissement.
 export function afficherPoints(points, { recadrer = false } = {}) {
   groupe.clearLayers();
+  marqueursParId.clear();
   const marqueurs = points.map((p) =>
     L.marker([p.lat_lon.lat, p.lat_lon.lon], {
       icon: icone(p),
@@ -84,6 +86,7 @@ export function afficherPoints(points, { recadrer = false } = {}) {
       { direction: "top", offset: [0, -8] }
     )
   );
+  marqueurs.forEach((m) => marqueursParId.set(m.options.idEvenement, m));
   groupe.addLayers(marqueurs);
   if (marqueurs.length && recadrer) {
     carte.fitBounds(groupe.getBounds(), { padding: [30, 30], maxZoom: 15 });
@@ -95,4 +98,23 @@ export function afficherPoints(points, { recadrer = false } = {}) {
 // À appeler quand le conteneur redevient visible (il était masqué en vue liste).
 export function rafraichirTaille() {
   carte?.invalidateSize();
+}
+
+// Centre et zoome sur un événement (lien « Voir sur la carte ») : la carte se
+// place au niveau de la rue, déplie le regroupement si besoin et affiche le nom.
+// Renvoie false si l'événement n'est pas sur la carte (terminé, filtré, sans adresse).
+export function centrerSur(id) {
+  const marqueur = marqueursParId.get(String(id));
+  if (!carte || !marqueur) return false;
+  document.querySelectorAll(".point-actif").forEach((el) => el.classList.remove("point-actif"));
+  const montrer = () => {
+    marqueur.getElement()?.classList.add("point-actif");
+    marqueur.openTooltip();
+  };
+  carte.setView(marqueur.getLatLng(), 17, { animate: false });
+  // Au niveau de la rue, le point est en général déjà visible ; sinon (plusieurs
+  // événements au même endroit) le regroupement s'ouvre en éventail.
+  if (groupe.getVisibleParent(marqueur) === marqueur) montrer();
+  else groupe.zoomToShowLayer(marqueur, montrer);
+  return true;
 }

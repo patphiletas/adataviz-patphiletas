@@ -72,6 +72,7 @@ Historique : le 2026-11-14, la recherche permettait d'injecter du HTML (`« ${qu
 - Données : `chargerPointsCarte()` (point d'export, mêmes filtres, peu de champs, `pointsValides()` écarte les événements sans coordonnées, comptés à part) ; `chargerEvenement(id)` pour l'encart ouvert depuis un marqueur.
 - `src/carte.js` est importé dynamiquement (chunk séparé, ~45 Ko gzip) ; `leaflet.markercluster` attend `window.L`, d'où son `import()` après `window.L = L`. `creerCarte()` est idempotent.
 - Fond de plan : **OpenStreetMap** (`tile.openstreetmap.org`, attribution obligatoire, usage modéré). CARTO a été essayé : ses tuiles affichent désormais « API KEY REQUIRED ». L'aspect sobre et le mode nuit sont un `filter` CSS sur `.leaflet-tile-pane` (pas de second fond de plan).
+- « Voir sur la carte » : `etat.filtres.evenement` (URL `evenement=<id>`, lu seulement si `vue=carte` et numérique ; ni compté comme filtre ni gardé hors vue carte, effacé dès qu'un filtre change). `voirSurLaCarte()` fait un `pushState` puis bascule ; un écouteur `popstate` relit l'adresse (retour → liste). `centrerSur(id)` (`carte.js`) : `setView` zoom 17 sans animation, puis tooltip + classe `.point-actif` tout de suite si le point est visible, sinon `zoomToShowLayer` (éventail). Le lien n'existe que si `aDesCoordonnees()`.
 - Cadrage : Paris (zoom 12) par défaut ; recadrage sur les points seulement si un arrondissement est filtré ou s'il y a ≤ 30 résultats (quelques événements hors Paris éloigneraient la vue).
 
 ## Performance et partage

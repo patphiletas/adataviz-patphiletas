@@ -60,6 +60,7 @@ async function charger({ reinitialiser }) {
   const { signal } = controleur;
 
   const enCarte = etat.filtres.vue === "carte";
+  if (!enCarte) etat.filtres.evenement = "";
   document.getElementById("carte").hidden = !enCarte;
   liste.hidden = enCarte;
   if (enCarte) {
@@ -200,6 +201,7 @@ function initialiserPage() {
     const choixVue = event.target.closest(".choix-vue");
     if (choixVue && choixVue.dataset.vue !== etat.filtres.vue) {
       etat.filtres.vue = choixVue.dataset.vue;
+      etat.filtres.evenement = "";
       synchroniserControles();
       charger({ reinitialiser: true });
       return;
@@ -207,16 +209,19 @@ function initialiserPage() {
     const bouton = event.target.closest(".filtre-quand");
     if (!bouton) return;
     etat.filtres.quand = bouton.dataset.quand;
+    etat.filtres.evenement = "";
     synchroniserControles();
     charger({ reinitialiser: true });
   });
   document.getElementById("filtre-gratuit").addEventListener("change", (event) => {
     etat.filtres.gratuit = event.target.checked;
+    etat.filtres.evenement = "";
     synchroniserControles();
     charger({ reinitialiser: true });
   });
   document.getElementById("filtre-arr").addEventListener("change", (event) => {
     etat.filtres.arrondissement = event.target.value;
+    etat.filtres.evenement = "";
     synchroniserControles();
     charger({ reinitialiser: true });
   });
@@ -230,6 +235,8 @@ function initialiserPage() {
     if (event.target.id === "reessayer") charger({ reinitialiser: true });
     if (event.target.id === "etat-reinitialiser") resetAffichage();
     // Le bouton « Infos pratiques » ou, à la souris, l'image de la carte
+    const versCarte = event.target.closest(".voir-carte");
+    if (versCarte) return voirSurLaCarte(versCarte.dataset.id);
     const declencheur = event.target.closest(".ouvrir-fiche, .card-visuel");
     if (declencheur) ouvrirFiche(declencheur.dataset.id);
   });
@@ -239,6 +246,12 @@ function initialiserPage() {
   document.getElementById("fiche-fermer").addEventListener("click", () => fiche.close());
   fiche.addEventListener("click", (event) => {
     if (event.target === fiche) fiche.close();
+    const versCarte = event.target.closest(".voir-carte");
+    if (versCarte) {
+      fiche.close();
+      voirSurLaCarte(versCarte.dataset.id);
+      return;
+    }
     const lancer = event.target.closest(".video-lancer");
     if (lancer) lancerVideo(lancer);
   });
@@ -289,6 +302,10 @@ async function chargerCarte(signal) {
     rafraichirTaille();
     const { points, sansAdresse } = await chargerPointsCarte(etat.filtres, { signal });
     afficherPoints(points, { recadrer: Boolean(etat.filtres.arrondissement) || points.length <= 30 });
+    if (etat.filtres.evenement) {
+      const { centrerSur } = await moduleCarte;
+      centrerSur(etat.filtres.evenement);
+    }
     const absents = sansAdresse ? ` · ${sansAdresse} sans adresse, visibles en liste` : "";
     compteur.textContent = points.length
       ? `${resumeFiltres(etat.filtres, points.length)} sur la carte${absents}`
@@ -308,6 +325,25 @@ async function chargerCarte(signal) {
     });
   }
 }
+
+// « Voir sur la carte » : passe en vue carte (mêmes filtres) centrée sur l'événement.
+// Une entrée d'historique est ajoutée : le bouton « retour » ramène à la liste.
+function voirSurLaCarte(id) {
+  if (!id) return;
+  window.history.pushState(null, "", window.location.href);
+  etat.filtres.vue = "carte";
+  etat.filtres.evenement = String(id);
+  synchroniserControles();
+  charger({ reinitialiser: true });
+  document.querySelector(".barre-filtres").scrollIntoView({ behavior: "smooth" });
+}
+
+// Bouton « retour » / « suivant » du navigateur : on relit les filtres de l'adresse.
+window.addEventListener("popstate", () => {
+  etat.filtres = lireFiltres(window.location.search);
+  synchroniserControles();
+  charger({ reinitialiser: true });
+});
 
 // L'élément <dialog> gère le piège du focus, Échap et le retour du focus sur le bouton.
 // Depuis la carte, l'événement n'est pas encore chargé en entier : on va le chercher.
@@ -350,6 +386,7 @@ function lancerRecherche(valeur, { immediat = false } = {}) {
     const recherche = valeur.trim();
     if (recherche === etat.filtres.recherche) return;
     etat.filtres.recherche = recherche;
+    etat.filtres.evenement = "";
     synchroniserControles();
     charger({ reinitialiser: true });
   };
@@ -359,6 +396,7 @@ function lancerRecherche(valeur, { immediat = false } = {}) {
 
 function gererTagClick(tag) {
   etat.filtres.tag = tag === etat.filtres.tag ? "" : tag;
+  etat.filtres.evenement = "";
   synchroniserControles();
   document.querySelector(".barre-filtres").scrollIntoView({ behavior: "smooth" });
   charger({ reinitialiser: true });

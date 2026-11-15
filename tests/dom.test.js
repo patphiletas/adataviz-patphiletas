@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate, urlImage, extraireVideos, urlLecteur } from "../src/dom.js";
+import { escapeHtml, safeUrl, sanitizeHtml, libelleDate, afficherCards, afficherFiche, messageEtat, colonneDate, urlImage, extraireVideos, urlLecteur, aDesCoordonnees } from "../src/dom.js";
 
 const MAINTENANT = new Date("2026-11-14T12:00:00+01:00");
 
@@ -281,5 +281,19 @@ describe("mode nuit", () => {
     expect(themeInitial(null, true)).toBe("dark");
     expect(themeInitial(null, false)).toBe("light");
     expect(themeInitial("n'importe quoi", true)).toBe("dark");
+  });
+});
+
+describe("lien « Voir sur la carte »", () => {
+  const localise = { id: "125022", title: "X", lat_lon: { lat: 48.86, lon: 2.35 } };
+
+  it("apparaît sur la carte et dans l'encart quand l'événement a des coordonnées", () => {
+    expect(afficherCards(localise, MAINTENANT)).toContain('<button type="button" class="voir-carte" data-id="125022">Voir sur la carte</button>');
+    expect(afficherFiche(localise, MAINTENANT)).toContain('class="voir-carte" data-id="125022"');
+  });
+
+  it("n'apparaît pas sans coordonnées", () => {
+    expect(afficherCards({ ...localise, lat_lon: null }, MAINTENANT)).not.toContain("voir-carte");
+    expect(aDesCoordonnees({ lat_lon: { lat: "48", lon: 2 } })).toBe(false);
   });
 });
